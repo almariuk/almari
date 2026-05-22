@@ -699,6 +699,18 @@ CREATE INDEX idx_search_events_created ON search_events(created_at DESC);
 CREATE INDEX idx_listing_views_listing ON listing_views(listing_id, created_at DESC);
 CREATE INDEX idx_benchmark_prices_lookup ON benchmark_prices(almari_subcategory_id, fabric_type_id);
 
+-- Additional indexes for RLS policy paths and app query patterns
+CREATE INDEX idx_listing_photos_listing    ON listing_photos(listing_id);
+CREATE INDEX idx_payouts_seller            ON payouts(seller_id);
+CREATE INDEX idx_payout_items_payout       ON payout_items(payout_id);
+CREATE INDEX idx_listing_waitlist_user     ON listing_waitlist(user_id);
+CREATE INDEX idx_concerns_transaction      ON concerns(transaction_id);
+CREATE INDEX idx_removal_events_user       ON removal_score_events(user_id);
+CREATE INDEX idx_user_addresses_user       ON user_addresses(user_id);
+CREATE INDEX idx_subcategories_category    ON subcategories(category_id);
+CREATE INDEX idx_provenance_areas_city     ON provenance_areas(city_id);
+CREATE INDEX idx_transactions_listing      ON transactions(listing_id);
+
 -- ============================================================
 -- ALMARI SEED DATA
 -- ============================================================

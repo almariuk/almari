@@ -21,29 +21,51 @@ AS $$
 $$;
 
 -- ============================================================
--- PUBLIC PROFILES VIEW
+-- PUBLIC PROFILE FUNCTION
 -- Safe columns only. Raw trust score never exposed.
 -- Trust tier resolved via join to trust_tiers.
+-- SECURITY DEFINER required — a regular view would inherit the
+-- calling user's RLS context and only return their own profile.
+-- This function runs as its owner (postgres, BYPASSRLS) while
+-- auth.uid() session context remains correct.
+-- Call via: supabase.rpc('get_public_profile', { target_user_id })
 -- ============================================================
 
-CREATE VIEW public_profiles AS
-SELECT
-    ui.id                                                    AS user_id,
-    ui.first_name || ' ' || ui.last_name_initial || '.'     AS display_name,
-    ui.created_at                                            AS member_since,
-    tt.display_name                                          AS trust_tier,
-    tt.hindi_name                                            AS trust_tier_hindi,
-    tt.diya_colour_hex,
-    up.active_listing_count,
-    (SELECT count(*) FROM transactions t
-     WHERE t.seller_id = ui.id AND t.status = 'completed')  AS total_sales,
-    (SELECT count(*) FROM transactions t
-     WHERE t.buyer_id  = ui.id AND t.status = 'completed')  AS total_purchases
-FROM user_identity ui
-JOIN user_profile up ON up.user_id = ui.id
-JOIN trust_tiers tt
-  ON up.trust_score_cached >= tt.min_score
- AND up.trust_score_cached <= tt.max_score;
+CREATE OR REPLACE FUNCTION get_public_profile(target_user_id UUID)
+RETURNS TABLE (
+    user_id          UUID,
+    display_name     TEXT,
+    member_since     TIMESTAMPTZ,
+    trust_tier       TEXT,
+    trust_tier_hindi TEXT,
+    diya_colour_hex  CHAR(7),
+    active_listing_count INT,
+    total_sales      BIGINT,
+    total_purchases  BIGINT
+)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+    SELECT
+        ui.id,
+        ui.first_name || ' ' || ui.last_name_initial || '.',
+        ui.created_at,
+        tt.display_name,
+        tt.hindi_name,
+        tt.diya_colour_hex,
+        up.active_listing_count,
+        (SELECT count(*) FROM transactions t
+         WHERE t.seller_id = ui.id AND t.status = 'completed'),
+        (SELECT count(*) FROM transactions t
+         WHERE t.buyer_id  = ui.id AND t.status = 'completed')
+    FROM user_identity ui
+    JOIN user_profile up ON up.user_id = ui.id
+    JOIN trust_tiers tt
+      ON up.trust_score_cached >= tt.min_score
+     AND up.trust_score_cached <= tt.max_score
+    WHERE ui.id = target_user_id;
+$$;
 
 -- ============================================================
 -- DOMAIN 1: USERS AND IDENTITY
