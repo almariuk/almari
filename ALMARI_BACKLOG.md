@@ -102,6 +102,16 @@ Generous seller badge awarded. Community karma built. Listing still generates pr
 
 ## Priority 5 — Platform maturity
 
+### Cache Total Sales and Purchases on User Profile
+Currently computed live from transactions table in the public_profiles view.
+Add total_sales_count and total_purchases_count as integer columns to user_profile.
+Maintain via trigger on transactions when status transitions to 'completed'.
+Do when transaction volume makes the live query slow — measure first.
+
+### Public Profile — City Display
+Show the seller's city (from their default user_address) on their public profile.
+Not needed at launch — no addresses until first transaction. Add when address data exists.
+
 ### Quick List Option
 Minimum viable listing. Photos, category, condition, colour, why selling, one measurement, postage. Live in 3 minutes. Lower trust score shown honestly.
 
