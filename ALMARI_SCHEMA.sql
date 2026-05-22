@@ -261,7 +261,31 @@ CREATE TABLE daily_exchange_rates (
 );
 
 -- ============================================================
--- DOMAIN 4: LISTINGS
+-- DOMAIN 4: POSTAGE LOOKUP TABLES
+-- Defined here because listings (Domain 5) references them
+-- ============================================================
+
+CREATE TABLE postage_services (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    max_compensation_pence INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE package_bands (
+    id SERIAL PRIMARY KEY,
+    size_label TEXT NOT NULL CHECK (size_label IN ('Small','Medium','Large')),
+    weight_label TEXT NOT NULL CHECK (weight_label IN ('Light','Medium','Heavy')),
+    size_description TEXT NOT NULL,
+    weight_description TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (size_label, weight_label)
+);
+
+-- ============================================================
+-- DOMAIN 5: LISTINGS
 -- ============================================================
 
 CREATE TABLE listings (
@@ -478,27 +502,8 @@ CREATE TABLE benchmark_prices (
 );
 
 -- ============================================================
--- DOMAIN 6: POSTAGE
+-- DOMAIN 7: POSTAGE PRICES
 -- ============================================================
-
-CREATE TABLE postage_services (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    max_compensation_pence INT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE package_bands (
-    id SERIAL PRIMARY KEY,
-    size_label TEXT NOT NULL CHECK (size_label IN ('Small','Medium','Large')),
-    weight_label TEXT NOT NULL CHECK (weight_label IN ('Light','Medium','Heavy')),
-    size_description TEXT NOT NULL,
-    weight_description TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE (size_label, weight_label)
-);
 
 CREATE TABLE postage_prices (
     id SERIAL PRIMARY KEY,
