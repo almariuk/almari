@@ -19,11 +19,16 @@ import type {
   CategoryRow,
   ColourSwatchRow,
   ConditionTierRow,
+  FabricTypeRow,
+  ItemCareStatusRow,
   OccasionBucketRow,
+  PatternRow,
   SellerMotivationTypeRow,
   SubcategoryRow,
+  WorkTypeRow,
 } from '@/types/database';
 
+const MIN_PHOTOS = 4;
 const MAX_PHOTOS = 6;
 const PHOTO_SLOT = 90;
 const SWATCH_WRAP = 46;
@@ -78,6 +83,45 @@ export default function ListStep1() {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: workTypes = [] } = useQuery<WorkTypeRow[]>({
+    queryKey: ['work_types'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('work_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      return (data ?? []) as WorkTypeRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: patterns = [] } = useQuery<PatternRow[]>({
+    queryKey: ['patterns'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('patterns')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      return (data ?? []) as PatternRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: fabricTypes = [] } = useQuery<FabricTypeRow[]>({
+    queryKey: ['fabric_types'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fabric_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      return (data ?? []) as FabricTypeRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: occasions = [] } = useQuery<OccasionBucketRow[]>({
     queryKey: ['occasion_buckets'],
     queryFn: async () => {
@@ -117,6 +161,19 @@ export default function ListStep1() {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: careStatuses = [] } = useQuery<ItemCareStatusRow[]>({
+    queryKey: ['item_care_status'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('item_care_status')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      return (data ?? []) as ItemCareStatusRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: motivations = [] } = useQuery<SellerMotivationTypeRow[]>({
     queryKey: ['seller_motivation_types'],
     queryFn: async () => {
@@ -133,7 +190,7 @@ export default function ListStep1() {
   const subcategories = allSubcategories.filter((sc) => sc.category_id === draft.categoryId);
 
   const canProceed =
-    draft.photoUris.length > 0 &&
+    draft.photoUris.length >= MIN_PHOTOS &&
     draft.categoryId !== null &&
     draft.subcategoryId !== null &&
     draft.conditionId !== null;
@@ -166,7 +223,8 @@ export default function ListStep1() {
             Photos <Text style={{ color: theme.error }}>*</Text>
           </Text>
           <Text style={[s.hint, { color: theme.textDisabled }]}>
-            Add up to {MAX_PHOTOS} photos. First photo is the cover.
+            Add at least {MIN_PHOTOS} photos (up to {MAX_PHOTOS}). Full length, back, detail, and
+            label. First photo is the cover.
           </Text>
           <ScrollView
             horizontal
@@ -206,6 +264,12 @@ export default function ListStep1() {
               </TouchableOpacity>
             )}
           </ScrollView>
+          {draft.photoUris.length > 0 && draft.photoUris.length < MIN_PHOTOS && (
+            <Text style={[s.photoCountHint, { color: theme.textSecondary }]}>
+              {MIN_PHOTOS - draft.photoUris.length} more photo
+              {MIN_PHOTOS - draft.photoUris.length === 1 ? '' : 's'} needed
+            </Text>
+          )}
         </View>
 
         {/* ── Category ───────────────────────────────────────────── */}
@@ -246,7 +310,7 @@ export default function ListStep1() {
           )}
         </View>
 
-        {/* ── Subcategory (shown after category selected) ─────────── */}
+        {/* ── Subcategory ─────────────────────────────────────────── */}
         {draft.categoryId !== null && subcategories.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>
@@ -274,6 +338,111 @@ export default function ListStep1() {
                       style={[s.chipText, { color: selected ? theme.accentText : theme.text }]}
                     >
                       {sub.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Style (work type) ──────────────────────────────────── */}
+        {workTypes.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Style <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            {workTypes.map((wt) => {
+              const selected = draft.workTypeId === wt.id;
+              return (
+                <TouchableOpacity
+                  key={wt.id}
+                  style={[
+                    s.card,
+                    { borderColor: selected ? theme.accent : theme.border },
+                    selected && { backgroundColor: theme.accentSubtle },
+                  ]}
+                  onPress={() => draft.setWorkTypeId(selected ? null : wt.id)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text }]}>
+                    {wt.display_name}
+                  </Text>
+                  {wt.description ? (
+                    <Text style={[s.cardBody, { color: theme.textSecondary }]}>
+                      {wt.description}
+                    </Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── Pattern ────────────────────────────────────────────── */}
+        {patterns.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Pattern <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.chipsRow}
+            >
+              {patterns.map((pat) => {
+                const selected = draft.patternId === pat.id;
+                return (
+                  <TouchableOpacity
+                    key={pat.id}
+                    style={[
+                      s.chip,
+                      { borderColor: selected ? theme.accent : theme.border },
+                      selected && { backgroundColor: theme.accent },
+                    ]}
+                    onPress={() => draft.setPatternId(selected ? null : pat.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[s.chipText, { color: selected ? theme.accentText : theme.text }]}
+                    >
+                      {pat.display_name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Fabric ─────────────────────────────────────────────── */}
+        {fabricTypes.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Fabric <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.chipsRow}
+            >
+              {fabricTypes.map((fab) => {
+                const selected = draft.fabricTypeId === fab.id;
+                return (
+                  <TouchableOpacity
+                    key={fab.id}
+                    style={[
+                      s.chip,
+                      { borderColor: selected ? theme.accent : theme.border },
+                      selected && { backgroundColor: theme.accent },
+                    ]}
+                    onPress={() => draft.setFabricTypeId(selected ? null : fab.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[s.chipText, { color: selected ? theme.accentText : theme.text }]}
+                    >
+                      {fab.display_name}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -378,6 +547,52 @@ export default function ListStep1() {
             })
           )}
         </View>
+
+        {/* ── Item care ──────────────────────────────────────────── */}
+        {careStatuses.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Item care{' '}
+              <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            <Text style={[s.hint, { color: theme.textDisabled }]}>
+              Affects your listing trust score.
+            </Text>
+            {careStatuses.map((cs) => {
+              const selected = draft.careStatusId === cs.id;
+              return (
+                <TouchableOpacity
+                  key={cs.id}
+                  style={[
+                    s.card,
+                    { borderColor: selected ? theme.accent : theme.border },
+                    selected && { backgroundColor: theme.accentSubtle },
+                  ]}
+                  onPress={() => draft.setCareStatusId(selected ? null : cs.id)}
+                  activeOpacity={0.85}
+                >
+                  <View style={s.cardRow}>
+                    <Text
+                      style={[s.cardTitle, { color: selected ? theme.accent : theme.text, flex: 1 }]}
+                    >
+                      {cs.display_text}
+                    </Text>
+                    {cs.listing_trust_contribution > 0 && (
+                      <View style={[s.trustPill, { backgroundColor: theme.success }]}>
+                        <Text style={s.trustPillText}>+{cs.listing_trust_contribution}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {cs.detail_text ? (
+                    <Text style={[s.cardBody, { color: theme.textSecondary }]}>
+                      {cs.detail_text}
+                    </Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* ── Why selling ────────────────────────────────────────── */}
         {motivations.length > 0 && (
@@ -509,6 +724,11 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       gap: 4,
     },
     addPhotoLabel: { fontFamily: 'Inter_400Regular', fontSize: 11 },
+    photoCountHint: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      marginTop: 8,
+    },
 
     chipsRow: { gap: 8, paddingVertical: 2 },
     chip: {
@@ -548,6 +768,12 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       padding: 14,
       marginBottom: 8,
     },
+    cardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 2,
+    },
     cardTitle: {
       fontFamily: 'Inter_500Medium',
       fontSize: 14,
@@ -557,6 +783,16 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontFamily: 'Inter_400Regular',
       fontSize: 12,
       lineHeight: 17,
+    },
+    trustPill: {
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    trustPillText: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 11,
+      color: '#fff',
     },
 
     nextBtn: {
