@@ -63,7 +63,7 @@ export default function Register() {
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     clearError();
-    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
+    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: 'almari://' } });
     setLoading(false);
     if (err) { setError(err.message); return; }
     showInboxStage();
