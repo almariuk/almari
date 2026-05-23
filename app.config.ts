@@ -6,7 +6,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'almari',
   version: '1.0.0',
   orientation: 'portrait',
-  userInterfaceStyle: 'light',
+  userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'uk.almari.app',
