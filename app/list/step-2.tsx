@@ -102,6 +102,8 @@ export default function ListStep2() {
 
   // ── Derived data ──────────────────────────────────────────────
 
+  const selectedCity = cities.find((c) => c.id === draft.provenanceCityId) ?? null;
+  const pricePrefix = selectedCity?.country === 'UK' ? '£' : '₹';
   const areas = allAreas.filter((a) => a.city_id === draft.provenanceCityId);
   const bandPrices = allPostagePrices.filter((p) => p.band_id === draft.packageBandId);
 
@@ -345,7 +347,7 @@ export default function ListStep2() {
                           },
                         ]}
                       >
-                        <Text style={[s.inputPrefix, { color: theme.textSecondary }]}>₹</Text>
+                        <Text style={[s.inputPrefix, { color: theme.textSecondary }]}>{pricePrefix}</Text>
                         <TextInput
                           style={[s.input, { color: theme.text }]}
                           value={draft.originalPriceInr}

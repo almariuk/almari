@@ -170,7 +170,7 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
         : { isHeirloom: false, heirloomStory: '' }
     ),
   setHeirloomStory: (v) => set({ heirloomStory: v }),
-  setProvenanceCityId: (id) => set({ provenanceCityId: id, provenanceAreaId: null }),
+  setProvenanceCityId: (id) => set({ provenanceCityId: id, provenanceAreaId: null, originalPriceInr: '', originalPriceApproximate: false }),
   setProvenanceAreaId: (id) => set({ provenanceAreaId: id }),
   setSellerTypeId: (id) => set({ sellerTypeId: id }),
   setPurchaseYear: (v) => set({ purchaseYear: v }),

@@ -571,18 +571,9 @@ export default function ListStep1() {
                   onPress={() => draft.setCareStatusId(selected ? null : cs.id)}
                   activeOpacity={0.85}
                 >
-                  <View style={s.cardRow}>
-                    <Text
-                      style={[s.cardTitle, { color: selected ? theme.accent : theme.text, flex: 1 }]}
-                    >
-                      {cs.display_text}
-                    </Text>
-                    {cs.listing_trust_contribution > 0 && (
-                      <View style={[s.trustPill, { backgroundColor: theme.success }]}>
-                        <Text style={s.trustPillText}>+{cs.listing_trust_contribution}</Text>
-                      </View>
-                    )}
-                  </View>
+                  <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text }]}>
+                    {cs.display_text}
+                  </Text>
                   {cs.detail_text ? (
                     <Text style={[s.cardBody, { color: theme.textSecondary }]}>
                       {cs.detail_text}

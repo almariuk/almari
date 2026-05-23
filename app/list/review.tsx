@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { File as FSFile } from 'expo-file-system/next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -37,77 +38,11 @@ import type {
   PostagePriceRow,
 } from '@/types/database';
 
+import { computeTrust, getStateLabel } from '@/utils/trust';
+import type { TrustComponent } from '@/utils/trust';
+
 const STALE = 10 * 60 * 1000;
 const BUCKET = 'listing-photos';
-
-// ── Trust (same computation as pricing screen) ────────────────
-
-type TrustComponent = { label: string; earned: number; max: number };
-
-const PHOTO_PTS: Record<number, number> = { 4: 10, 5: 12, 6: 15 };
-const STATE_LABELS = ['Just listed', 'Starting', 'Building', 'Strong', 'Brilliant'];
-
-function getStateLabel(score: number, maxScore: number): string {
-  const pct = maxScore > 0 ? score / maxScore : 0;
-  if (pct < 0.2) return STATE_LABELS[0];
-  if (pct < 0.4) return STATE_LABELS[1];
-  if (pct < 0.6) return STATE_LABELS[2];
-  if (pct < 0.8) return STATE_LABELS[3];
-  return STATE_LABELS[4];
-}
-
-function computeTrust(
-  draft: ReturnType<typeof useListingDraftStore.getState>,
-  conditionRows: ConditionTierRow[],
-  careRows: ItemCareStatusRow[],
-): TrustComponent[] {
-  const photoCount = Math.min(draft.photoUris.length, 6);
-  const photoEarned = PHOTO_PTS[photoCount] ?? (photoCount >= 4 ? 10 : 0);
-  const craftEarned =
-    (draft.workTypeId !== null ? 5 : 0) +
-    (draft.patternId !== null ? 3 : 0) +
-    (draft.fabricTypeId !== null ? 3 : 0);
-  const occasionEarned = draft.occasionBucketId !== null ? 4 : 0;
-  const colourEarned = draft.colourId !== null ? 4 : 0;
-  const conditionRow = conditionRows.find((r) => r.id === draft.conditionId);
-  const conditionEarned = conditionRow?.listing_trust_contribution ?? 0;
-  const conditionMax = conditionRows.length > 0 ? Math.max(...conditionRows.map((r) => r.listing_trust_contribution)) : 10;
-  let provenanceEarned = 0;
-  if (draft.isHeirloom) {
-    provenanceEarned = draft.heirloomStory.trim().length > 0 ? 20 : 0;
-  } else {
-    if (draft.provenanceCityId !== null) provenanceEarned += 5;
-    if (draft.provenanceAreaId !== null) provenanceEarned += 3;
-    if (draft.sellerTypeId !== null) provenanceEarned += 3;
-    if (draft.purchaseYear.trim().length > 0) provenanceEarned += 4;
-    if (draft.originalPriceInr.trim().length > 0) provenanceEarned += 5;
-  }
-  const careRow = careRows.find((r) => r.id === draft.careStatusId);
-  const careEarned = careRow?.listing_trust_contribution ?? 0;
-  const careMax = careRows.length > 0 ? Math.max(...careRows.map((r) => r.listing_trust_contribution)) : 10;
-  const measurements: [string, number][] = [
-    [draft.listingBustCm, 3], [draft.listingWaistCm, 3], [draft.listingHipsCm, 3],
-    [draft.listingChestCm, 3], [draft.listingHeightCm, 3], [draft.listingUkShoeSize, 2],
-    [draft.listingLabelSize, 1],
-  ];
-  const measurementsEarned = measurements.reduce((acc: number, [v, pts]: [string, number]) => acc + (v.trim().length > 0 ? pts : 0), 0);
-  const setEarned = (draft.whatIsIncluded.trim().length > 0 ? 3 : 0) + (draft.isSetComplete !== null ? 5 : 0);
-  const motivationEarned = draft.motivationTypeId !== null ? 5 : 0;
-  const notesEarned = draft.additionalNotes.trim().length > 0 ? 5 : 0;
-  return [
-    { label: 'Photos', earned: photoEarned, max: 15 },
-    { label: 'Craft detail', earned: craftEarned, max: 11 },
-    { label: 'Occasion', earned: occasionEarned, max: 4 },
-    { label: 'Colour', earned: colourEarned, max: 4 },
-    { label: 'Condition', earned: conditionEarned, max: conditionMax },
-    { label: 'Provenance', earned: provenanceEarned, max: 20 },
-    { label: 'Care', earned: careEarned, max: careMax },
-    { label: 'Measurements', earned: measurementsEarned, max: 18 },
-    { label: 'Set info', earned: setEarned, max: 8 },
-    { label: 'Why selling', earned: motivationEarned, max: 5 },
-    { label: 'Additional notes', earned: notesEarned, max: 5 },
-  ];
-}
 
 // ── Photo upload ───────────────────────────────────────────────
 
@@ -116,10 +51,12 @@ async function uploadPhoto(uri: string, userId: string, index: number): Promise<
   const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
   const path = `${userId}/${Date.now()}_${index}.${ext}`;
 
-  const response = await fetch(uri);
-  const blob = await response.blob();
+  // fetch().blob() triggers a Hermes "ArrayBuffer not supported" error inside
+  // Supabase's storage client. Read as Uint8Array via the new FileSystem API,
+  // which the storage client handles without re-wrapping.
+  const bytes = await new FSFile(uri).bytes();
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType });
+  const { error } = await supabase.storage.from(BUCKET).upload(path, bytes, { contentType });
   if (error) throw new Error(`Photo upload failed: ${error.message}`);
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
@@ -148,6 +85,7 @@ export default function ListReview() {
   const setListingId = useListingDraftStore((st: ListingDraftState) => st.setListingId);
   const resetDraft = useListingDraftStore((st: ListingDraftState) => st.reset);
   const session = useAuthStore((st: ReturnType<typeof useAuthStore.getState>) => st.session);
+  const identity = useAuthStore((st: ReturnType<typeof useAuthStore.getState>) => st.identity);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -338,8 +276,9 @@ export default function ListReview() {
   // ── Submit ────────────────────────────────────────────────────
 
   async function submit() {
-    if (!session) return;
-    const userId = session.user.id;
+    if (!session || !identity) return;
+    const userId = session.user.id; // auth UID — used for storage path
+    const sellerId = identity.id;   // user_identity.id — used as seller_id FK
     setSubmitting(true);
     setSubmitError(null);
 
@@ -353,7 +292,7 @@ export default function ListReview() {
       const { data: listing, error: listingError } = await supabase
         .from('listings')
         .insert({
-          seller_id: userId,
+          seller_id: sellerId,
           category_id: draft.categoryId!,
           subcategory_id: draft.subcategoryId!,
           occasion_bucket_id: draft.occasionBucketId,
@@ -428,7 +367,7 @@ export default function ListReview() {
       if (draft.motivationTypeId !== null) {
         await supabase.from('private_seller_motivation').insert({
           listing_id: listingId,
-          user_id: userId,
+          user_id: sellerId,
           motivation_type_id: draft.motivationTypeId,
         });
       }
@@ -565,7 +504,7 @@ export default function ListReview() {
               {draft.originalPriceInr && (
                 <Row
                   label="Original price"
-                  value={`₹${draft.originalPriceInr}${draft.originalPriceApproximate ? ' (approx.)' : ''}`}
+                  value={`${city?.country === 'UK' ? '£' : '₹'}${draft.originalPriceInr}${draft.originalPriceApproximate ? ' (approx.)' : ''}`}
                 />
               )}
               {!city && !draft.purchaseYear && (
@@ -690,20 +629,15 @@ export default function ListReview() {
 // ── Row helper ────────────────────────────────────────────────
 
 function Row({ label, value }: { label: string; value?: string | null }) {
+  const theme = useTheme();
   if (!value) return null;
   return (
-    <View style={rowStyle.row}>
-      <Text style={rowStyle.label}>{label}</Text>
-      <Text style={rowStyle.value}>{value}</Text>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 5 }}>
+      <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: theme.textSecondary, flex: 1 }}>{label}</Text>
+      <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: theme.text, flex: 2, textAlign: 'right' }}>{value}</Text>
     </View>
   );
 }
-
-const rowStyle = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 5 },
-  label: { fontFamily: 'Inter_400Regular', fontSize: 13, color: '#888', flex: 1 },
-  value: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#1a1a1a', flex: 2, textAlign: 'right' },
-});
 
 // ── Styles ────────────────────────────────────────────────────
 

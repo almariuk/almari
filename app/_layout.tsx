@@ -88,8 +88,11 @@ export default function RootLayout() {
       setSession(session);
       if (session) {
         setIdentityLoading(true);
-        await loadUserData(session.user.id);
-        setIdentityLoading(false);
+        try {
+          await loadUserData(session.user.id);
+        } finally {
+          setIdentityLoading(false);
+        }
       } else {
         setIdentity(null);
         setProfile(null);

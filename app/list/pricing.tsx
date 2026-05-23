@@ -23,113 +23,12 @@ import type {
   ItemCareStatusRow,
   BenchmarkPriceRow,
   DailyExchangeRateRow,
+  ProvenanceCityRow,
 } from '@/types/database';
+import { computeTrust, getStateLabel } from '@/utils/trust';
+import type { TrustComponent } from '@/utils/trust';
 
 const STALE = 10 * 60 * 1000;
-
-// ── Trust computation ─────────────────────────────────────────
-
-type TrustComponent = { label: string; earned: number; max: number };
-
-const PHOTO_PTS: Record<number, number> = { 4: 10, 5: 12, 6: 15 };
-const STATE_LABELS = ['Just listed', 'Starting', 'Building', 'Strong', 'Brilliant'];
-
-function getStateLabel(score: number, maxScore: number): string {
-  const pct = maxScore > 0 ? score / maxScore : 0;
-  if (pct < 0.2) return STATE_LABELS[0];
-  if (pct < 0.4) return STATE_LABELS[1];
-  if (pct < 0.6) return STATE_LABELS[2];
-  if (pct < 0.8) return STATE_LABELS[3];
-  return STATE_LABELS[4];
-}
-
-function computeTrust(
-  draft: ReturnType<typeof useListingDraftStore.getState>,
-  conditionRows: ConditionTierRow[],
-  careRows: ItemCareStatusRow[],
-): TrustComponent[] {
-  // Photos — 15 pts max
-  const photoCount = Math.min(draft.photoUris.length, 6);
-  const photoEarned = PHOTO_PTS[photoCount] ?? (photoCount >= 4 ? 10 : 0);
-
-  // Craft detail — 11 pts max (work=5, pattern=3, fabric=3)
-  const craftEarned =
-    (draft.workTypeId !== null ? 5 : 0) +
-    (draft.patternId !== null ? 3 : 0) +
-    (draft.fabricTypeId !== null ? 3 : 0);
-
-  // Occasion — 4 pts
-  const occasionEarned = draft.occasionBucketId !== null ? 4 : 0;
-
-  // Colour — 4 pts
-  const colourEarned = draft.colourId !== null ? 4 : 0;
-
-  // Condition — from DB row (same pattern as care status)
-  const conditionRow = conditionRows.find((r) => r.id === draft.conditionId);
-  const conditionEarned = conditionRow?.listing_trust_contribution ?? 0;
-  const conditionMax =
-    conditionRows.length > 0
-      ? Math.max(...conditionRows.map((r) => r.listing_trust_contribution))
-      : 10;
-
-  // Provenance — 20 pts max
-  let provenanceEarned = 0;
-  if (draft.isHeirloom) {
-    provenanceEarned = draft.heirloomStory.trim().length > 0 ? 20 : 0;
-  } else {
-    if (draft.provenanceCityId !== null) provenanceEarned += 5;
-    if (draft.provenanceAreaId !== null) provenanceEarned += 3;
-    if (draft.sellerTypeId !== null) provenanceEarned += 3;
-    if (draft.purchaseYear.trim().length > 0) provenanceEarned += 4;
-    if (draft.originalPriceInr.trim().length > 0) provenanceEarned += 5;
-  }
-
-  // Care status — from DB row
-  const careRow = careRows.find((r) => r.id === draft.careStatusId);
-  const careEarned = careRow?.listing_trust_contribution ?? 0;
-  const careMax =
-    careRows.length > 0 ? Math.max(...careRows.map((r) => r.listing_trust_contribution)) : 10;
-
-  // Measurements — 18 pts max
-  const measurements: [string, number][] = [
-    [draft.listingBustCm, 3],
-    [draft.listingWaistCm, 3],
-    [draft.listingHipsCm, 3],
-    [draft.listingChestCm, 3],
-    [draft.listingHeightCm, 3],
-    [draft.listingUkShoeSize, 2],
-    [draft.listingLabelSize, 1],
-  ];
-  const measurementsEarned = measurements.reduce(
-    (acc: number, [v, pts]: [string, number]) => acc + (v.trim().length > 0 ? pts : 0),
-    0,
-  );
-
-  // Set contents — 8 pts max
-  const setEarned =
-    (draft.whatIsIncluded.trim().length > 0 ? 3 : 0) +
-    (draft.isSetComplete !== null ? 5 : 0);
-
-  // Why selling — 5 pts
-  const motivationEarned = draft.motivationTypeId !== null ? 5 : 0;
-
-  // Additional notes — 5 pts
-  const notesEarned = draft.additionalNotes.trim().length > 0 ? 5 : 0;
-
-  return [
-    { label: 'Photos', earned: photoEarned, max: 15 },
-    { label: 'Craft detail', earned: craftEarned, max: 11 },
-    { label: 'Occasion', earned: occasionEarned, max: 4 },
-    { label: 'Colour', earned: colourEarned, max: 4 },
-    { label: 'Condition', earned: conditionEarned, max: conditionMax },
-    { label: 'Provenance', earned: provenanceEarned, max: 20 },
-    { label: 'Care', earned: careEarned, max: careMax },
-    { label: 'Measurements', earned: measurementsEarned, max: 18 },
-    { label: 'Set info', earned: setEarned, max: 8 },
-    { label: 'Why selling', earned: motivationEarned, max: 5 },
-    { label: 'Additional notes', earned: notesEarned, max: 5 },
-  ];
-}
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -211,6 +110,18 @@ export default function ListPricing() {
     staleTime: STALE,
   });
 
+  const citiesQuery = useQuery<ProvenanceCityRow[]>({
+    queryKey: ['provenance_cities'],
+    queryFn: async () => {
+      const { data } = await supabase.from('provenance_cities').select('*').order('name');
+      return (data ?? []) as ProvenanceCityRow[];
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const selectedCity = citiesQuery.data?.find((c) => c.id === draft.provenanceCityId) ?? null;
+  const isGbp = selectedCity?.country === 'UK';
+
   const rateQuery = useQuery<DailyExchangeRateRow | null>({
     queryKey: ['exchange_rate', 'INR', 'GBP'],
     queryFn: async () => {
@@ -225,7 +136,7 @@ export default function ListPricing() {
       if (error) throw error;
       return data;
     },
-    enabled: isProvenanceComplete(draft),
+    enabled: isProvenanceComplete(draft) && !isGbp,
     staleTime: STALE,
   });
 
@@ -288,13 +199,15 @@ export default function ListPricing() {
   }, [benchmark]);
 
   const originalCostGbp = useMemo(() => {
-    const inrStr = draft.originalPriceInr.trim();
+    const priceStr = draft.originalPriceInr.trim();
+    if (!priceStr) return null;
+    const amount = parseFloat(priceStr);
+    if (isNaN(amount)) return null;
+    if (isGbp) return amount;
     const rate = rateQuery.data?.rate;
-    if (!inrStr || !rate || rate === 0) return null;
-    const inr = parseFloat(inrStr);
-    if (isNaN(inr)) return null;
-    return inr / rate;
-  }, [draft.originalPriceInr, rateQuery.data]);
+    if (!rate || rate === 0) return null;
+    return amount / rate;
+  }, [draft.originalPriceInr, isGbp, rateQuery.data]);
 
   // ── Price input ───────────────────────────────────────────────
 
@@ -352,18 +265,6 @@ export default function ListPricing() {
                 </View>
               </View>
 
-              <View style={s.componentList}>
-                {components.map((c: TrustComponent) => (
-                  <View key={c.label} style={s.componentRow}>
-                    <View style={[s.dot, { backgroundColor: dotColour(c.earned, c.max) }]} />
-                    <Text style={s.componentLabel}>{c.label}</Text>
-                    <Text style={s.componentPts}>
-                      {c.earned}
-                      <Text style={s.componentPtsOf}> / {c.max}</Text>
-                    </Text>
-                  </View>
-                ))}
-              </View>
             </View>
           </View>
 

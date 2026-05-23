@@ -157,10 +157,24 @@ export default function Profile() {
   const qc = useQueryClient();
   const s = makeStyles(theme);
 
-  const { session, identity, profile, setIdentity } = useAuthStore();
+  const { session, identity, profile: cachedProfile, setIdentity } = useAuthStore();
 
-  const userId = session?.user.id ?? '';
+  const userId = session?.user.id ?? '';        // auth UID — used for auth operations only
+  const identityId = identity?.id ?? '';        // user_identity.id — used for all DB FK references
   const email = session?.user.email ?? '';
+
+  // Always fetch a fresh copy so counts (active_listing_count etc.) reflect DB state
+  const { data: freshProfile } = useQuery({
+    queryKey: ['user_profile', identity?.id],
+    queryFn: async () => {
+      if (!identity?.id) return null;
+      const { data } = await supabase.from('user_profile').select('*').eq('user_id', identity.id).maybeSingle();
+      return data;
+    },
+    enabled: !!identity?.id,
+    staleTime: 0,
+  });
+  const profile = freshProfile ?? cachedProfile;
 
   // ── Notification prefs (AsyncStorage) ──────────────────────
 
@@ -227,7 +241,7 @@ export default function Profile() {
     setSavingAddr(true);
     const isFirst = (addressQuery.data ?? []).length === 0;
     await supabase.from('user_addresses').insert({
-      user_id: userId,
+      user_id: identityId,
       address_line_1: addrLine1.trim(),
       address_line_2: addrLine2.trim() || null,
       city: addrCity.trim(),
@@ -266,47 +280,47 @@ export default function Profile() {
   // ── Queries ───────────────────────────────────────────────────
 
   const addressQuery = useQuery<UserAddressRow[]>({
-    queryKey: ['user_addresses', userId],
+    queryKey: ['user_addresses', identityId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_addresses')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', identityId)
         .order('is_default', { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!userId,
+    enabled: !!identityId,
   });
 
   const payoutQuery = useQuery<PayoutRow[]>({
-    queryKey: ['payouts_recent', userId],
+    queryKey: ['payouts_recent', identityId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payouts')
         .select('*')
-        .eq('seller_id', userId)
+        .eq('seller_id', identityId)
         .order('created_at', { ascending: false })
         .limit(3);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!userId,
+    enabled: !!identityId,
   });
 
   const purchaseQuery = useQuery<TransactionRow[]>({
-    queryKey: ['purchases_recent', userId],
+    queryKey: ['purchases_recent', identityId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
-        .eq('buyer_id', userId)
+        .eq('buyer_id', identityId)
         .order('created_at', { ascending: false })
         .limit(3);
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!userId,
+    enabled: !!identityId,
   });
 
   // ── Derived ───────────────────────────────────────────────────

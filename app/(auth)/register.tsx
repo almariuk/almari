@@ -168,6 +168,8 @@ export default function Register() {
                 : 'Sign in to continue.'}
             </Text>
 
+            {!!error && <Text style={[s.errorText, { marginBottom: 12 }]}>{error}</Text>}
+
             <View style={s.fieldGroup}>
               <View style={[s.inputWrap, { borderColor: inputBorder('email'), backgroundColor: theme.inputBackground }]}>
                 <IconMail size={18} color={focusedField === 'email' ? theme.accent : theme.textSecondary} />
@@ -212,8 +214,6 @@ export default function Register() {
                 </Text>
               )}
             </View>
-
-            {!!error && <Text style={s.errorText}>{error}</Text>}
 
             <TouchableOpacity
               style={[s.btnPrimary, { backgroundColor: theme.accent }]}
