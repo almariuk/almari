@@ -1,6 +1,6 @@
-import { View } from 'react-native';
+import { Redirect } from 'expo-router';
 
-// S18 — Removal reason (presented as modal)
+// S18 stub — redirects until the real screen is built
 export default function RemovalReason() {
-  return <View style={{ flex: 1 }} />;
+  return <Redirect href="/(app)" />;
 }

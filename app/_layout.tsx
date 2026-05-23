@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,11 +19,12 @@ import { GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
 import * as Linking from 'expo-linking';
 import { useAuthStore } from '@/store/auth';
 import { supabase } from '@/lib/supabase';
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const [fontTimedOut, setFontTimedOut] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     CormorantGaramond_400Regular,
     CormorantGaramond_400Regular_Italic,
@@ -34,6 +35,11 @@ export default function RootLayout() {
     Inter_600SemiBold,
     GreatVibes_400Regular,
   });
+
+  useEffect(() => {
+    const t = setTimeout(() => setFontTimedOut(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
 
   const { session, initialized, identityLoading, identity, setSession, setInitialized, setIdentityLoading, setIdentity, setProfile } = useAuthStore();
   const segments = useSegments();
@@ -74,6 +80,8 @@ export default function RootLayout() {
       setSession(session);
       if (session) await loadUserData(session.user.id);
       setInitialized(true);
+    }).catch(() => {
+      setInitialized(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -92,7 +100,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!initialized || (!fontsLoaded && !fontError)) return;
+    if (!initialized || (!fontsLoaded && !fontError && !fontTimedOut)) return;
 
     if (!splashHidden.current) {
       splashHidden.current = true;
@@ -112,14 +120,12 @@ export default function RootLayout() {
       // Returning user who just signed in
       router.replace('/(app)');
     }
-  }, [session, identity, identityLoading, segments, initialized, fontsLoaded, fontError]);
+  }, [session, identity, identityLoading, segments, initialized, fontsLoaded, fontError, fontTimedOut]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="removal-reason" options={{ presentation: 'modal' }} />
-      </Stack>
+      <Stack screenOptions={{ headerShown: false }} />
     </QueryClientProvider>
   );
 }
