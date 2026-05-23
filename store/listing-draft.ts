@@ -42,6 +42,9 @@ interface ListingDraftData {
   packageBandId: number | null;
   postageServiceId: number | null;
 
+  // Step 3 — Pricing
+  askingPricePence: number | null;
+
   // Populated at Review step after Supabase insert
   listingId: string | null;
 }
@@ -83,6 +86,8 @@ interface ListingDraftActions {
   // Step 2 — Postage
   setPackageBandId: (id: number | null) => void;
   setPostageServiceId: (id: number | null) => void;
+  // Step 3 — Pricing
+  setAskingPricePence: (pence: number | null) => void;
   // Review
   setListingId: (id: string) => void;
   reset: () => void;
@@ -122,6 +127,7 @@ const initialData: ListingDraftData = {
   isSetComplete: null,
   packageBandId: null,
   postageServiceId: null,
+  askingPricePence: null,
   listingId: null,
 };
 
@@ -182,6 +188,9 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   // Changing band invalidates any previously selected service
   setPackageBandId: (id) => set({ packageBandId: id, postageServiceId: null }),
   setPostageServiceId: (id) => set({ postageServiceId: id }),
+
+  // Step 3 — Pricing
+  setAskingPricePence: (pence) => set({ askingPricePence: pence }),
 
   // Review
   setListingId: (id) => set({ listingId: id }),
