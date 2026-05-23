@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 
-interface ListingDraftState {
-  // Step 1
+// ── Data shape (all serialisable values) ─────────────────────
+interface ListingDraftData {
+  // Step 1 — Item details
   photoUris: string[];
   categoryId: number | null;
   subcategoryId: number | null;
@@ -14,9 +15,40 @@ interface ListingDraftState {
   careStatusId: number | null;
   motivationTypeId: number | null;
 
+  // Step 2 — Provenance
+  isHeirloom: boolean;
+  heirloomStory: string;
+  provenanceCityId: number | null;
+  provenanceAreaId: number | null;
+  sellerTypeId: number | null;
+  purchaseYear: string;
+  originalPriceInr: string;
+  originalPriceApproximate: boolean;
+
+  // Step 2 — Garment measurements
+  listingBustCm: string;
+  listingWaistCm: string;
+  listingHipsCm: string;
+  listingChestCm: string;
+  listingHeightCm: string;
+  listingUkShoeSize: string;
+  listingLabelSize: string;
+
+  // Step 2 — Set
+  whatIsIncluded: string;
+  isSetComplete: boolean | null;
+
+  // Step 2 — Postage
+  packageBandId: number | null;
+  postageServiceId: number | null;
+
   // Populated at Review step after Supabase insert
   listingId: string | null;
+}
 
+// ── Actions ──────────────────────────────────────────────────
+interface ListingDraftActions {
+  // Step 1
   setPhotoUris: (uris: string[]) => void;
   setCategoryId: (id: number | null) => void;
   setSubcategoryId: (id: number | null) => void;
@@ -28,26 +60,38 @@ interface ListingDraftState {
   setConditionId: (id: number | null) => void;
   setCareStatusId: (id: number | null) => void;
   setMotivationTypeId: (id: number | null) => void;
+  // Step 2 — Provenance
+  setIsHeirloom: (v: boolean) => void;
+  setHeirloomStory: (v: string) => void;
+  setProvenanceCityId: (id: number | null) => void;
+  setProvenanceAreaId: (id: number | null) => void;
+  setSellerTypeId: (id: number | null) => void;
+  setPurchaseYear: (v: string) => void;
+  setOriginalPriceInr: (v: string) => void;
+  setOriginalPriceApproximate: (v: boolean) => void;
+  // Step 2 — Measurements
+  setListingBustCm: (v: string) => void;
+  setListingWaistCm: (v: string) => void;
+  setListingHipsCm: (v: string) => void;
+  setListingChestCm: (v: string) => void;
+  setListingHeightCm: (v: string) => void;
+  setListingUkShoeSize: (v: string) => void;
+  setListingLabelSize: (v: string) => void;
+  // Step 2 — Set
+  setWhatIsIncluded: (v: string) => void;
+  setIsSetComplete: (v: boolean | null) => void;
+  // Step 2 — Postage
+  setPackageBandId: (id: number | null) => void;
+  setPostageServiceId: (id: number | null) => void;
+  // Review
   setListingId: (id: string) => void;
   reset: () => void;
 }
 
-const initial: Omit<
-  ListingDraftState,
-  | 'setPhotoUris'
-  | 'setCategoryId'
-  | 'setSubcategoryId'
-  | 'setWorkTypeId'
-  | 'setPatternId'
-  | 'setFabricTypeId'
-  | 'setOccasionBucketId'
-  | 'setColourId'
-  | 'setConditionId'
-  | 'setCareStatusId'
-  | 'setMotivationTypeId'
-  | 'setListingId'
-  | 'reset'
-> = {
+export type ListingDraftState = ListingDraftData & ListingDraftActions;
+
+// ── Initial data ─────────────────────────────────────────────
+const initialData: ListingDraftData = {
   photoUris: [],
   categoryId: null,
   subcategoryId: null,
@@ -59,13 +103,33 @@ const initial: Omit<
   conditionId: null,
   careStatusId: null,
   motivationTypeId: null,
+  isHeirloom: false,
+  heirloomStory: '',
+  provenanceCityId: null,
+  provenanceAreaId: null,
+  sellerTypeId: null,
+  purchaseYear: '',
+  originalPriceInr: '',
+  originalPriceApproximate: false,
+  listingBustCm: '',
+  listingWaistCm: '',
+  listingHipsCm: '',
+  listingChestCm: '',
+  listingHeightCm: '',
+  listingUkShoeSize: '',
+  listingLabelSize: '',
+  whatIsIncluded: '',
+  isSetComplete: null,
+  packageBandId: null,
+  postageServiceId: null,
   listingId: null,
 };
 
 export const useListingDraftStore = create<ListingDraftState>((set) => ({
-  ...initial,
+  ...initialData,
+
+  // Step 1
   setPhotoUris: (uris) => set({ photoUris: uris }),
-  // Clearing subcategory when category changes is an invariant, not optional logic
   setCategoryId: (id) => set({ categoryId: id, subcategoryId: null }),
   setSubcategoryId: (id) => set({ subcategoryId: id }),
   setWorkTypeId: (id) => set({ workTypeId: id }),
@@ -76,6 +140,50 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   setConditionId: (id) => set({ conditionId: id }),
   setCareStatusId: (id) => set({ careStatusId: id }),
   setMotivationTypeId: (id) => set({ motivationTypeId: id }),
+
+  // Step 2 — Provenance
+  // Toggling heirloom clears the opposing set of fields — invariant, not UI logic
+  setIsHeirloom: (v) =>
+    set(
+      v
+        ? {
+            isHeirloom: true,
+            provenanceCityId: null,
+            provenanceAreaId: null,
+            sellerTypeId: null,
+            purchaseYear: '',
+            originalPriceInr: '',
+            originalPriceApproximate: false,
+          }
+        : { isHeirloom: false, heirloomStory: '' }
+    ),
+  setHeirloomStory: (v) => set({ heirloomStory: v }),
+  setProvenanceCityId: (id) => set({ provenanceCityId: id, provenanceAreaId: null }),
+  setProvenanceAreaId: (id) => set({ provenanceAreaId: id }),
+  setSellerTypeId: (id) => set({ sellerTypeId: id }),
+  setPurchaseYear: (v) => set({ purchaseYear: v }),
+  setOriginalPriceInr: (v) => set({ originalPriceInr: v }),
+  setOriginalPriceApproximate: (v) => set({ originalPriceApproximate: v }),
+
+  // Step 2 — Measurements
+  setListingBustCm: (v) => set({ listingBustCm: v }),
+  setListingWaistCm: (v) => set({ listingWaistCm: v }),
+  setListingHipsCm: (v) => set({ listingHipsCm: v }),
+  setListingChestCm: (v) => set({ listingChestCm: v }),
+  setListingHeightCm: (v) => set({ listingHeightCm: v }),
+  setListingUkShoeSize: (v) => set({ listingUkShoeSize: v }),
+  setListingLabelSize: (v) => set({ listingLabelSize: v }),
+
+  // Step 2 — Set
+  setWhatIsIncluded: (v) => set({ whatIsIncluded: v }),
+  setIsSetComplete: (v) => set({ isSetComplete: v }),
+
+  // Step 2 — Postage
+  // Changing band invalidates any previously selected service
+  setPackageBandId: (id) => set({ packageBandId: id, postageServiceId: null }),
+  setPostageServiceId: (id) => set({ postageServiceId: id }),
+
+  // Review
   setListingId: (id) => set({ listingId: id }),
-  reset: () => set(initial),
+  reset: () => set(initialData),
 }));
