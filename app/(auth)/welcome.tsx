@@ -91,14 +91,16 @@ export default function Welcome() {
 
       const eventsToInsert: { user_id: string; event_type_id: number; score_delta: number }[] = [];
 
-      const emailEvent = (eventTypes as { id: number; name: string }[] | null)?.find(e => e.name === 'email_verified');
+      const typedEventTypes = (eventTypes as { id: number; name: string; score_delta: number }[] | null) ?? [];
+
+      const emailEvent = typedEventTypes.find(e => e.name === 'email_verified');
       if (emailEvent) {
-        eventsToInsert.push({ user_id: typedIdentity.id, event_type_id: emailEvent.id, score_delta: 2 });
+        eventsToInsert.push({ user_id: typedIdentity.id, event_type_id: emailEvent.id, score_delta: emailEvent.score_delta });
       }
 
-      const measurementEvent = (eventTypes as { id: number; name: string }[] | null)?.find(e => e.name === 'measurements_saved');
+      const measurementEvent = typedEventTypes.find(e => e.name === 'measurements_saved');
       if (measurementEvent && !skipMeasurements && hasMeasurements) {
-        eventsToInsert.push({ user_id: typedIdentity.id, event_type_id: measurementEvent.id, score_delta: 2 });
+        eventsToInsert.push({ user_id: typedIdentity.id, event_type_id: measurementEvent.id, score_delta: measurementEvent.score_delta });
       }
 
       if (eventsToInsert.length > 0) {

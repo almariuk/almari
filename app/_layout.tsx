@@ -34,36 +34,45 @@ export default function RootLayout() {
     GreatVibes_400Regular,
   });
 
-  const { session, initialized, identity, setSession, setInitialized, setIdentity } = useAuthStore();
+  const { session, initialized, identity, setSession, setInitialized, setIdentity, setProfile } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const splashHidden = useRef(false);
 
   useEffect(() => {
+    const loadUserData = async (userId: string) => {
+      const { data: identityRow } = await supabase
+        .from('user_identity')
+        .select('*')
+        .eq('auth_id', userId)
+        .maybeSingle();
+      setIdentity(identityRow ?? null);
+
+      if (identityRow) {
+        const { data: profileRow } = await supabase
+          .from('user_profile')
+          .select('*')
+          .eq('user_id', identityRow.id)
+          .maybeSingle();
+        setProfile(profileRow ?? null);
+      } else {
+        setProfile(null);
+      }
+    };
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      if (session) {
-        const { data } = await supabase
-          .from('user_identity')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .maybeSingle();
-        setIdentity(data ?? null);
-      }
+      if (session) await loadUserData(session.user.id);
       setInitialized(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
-        const { data } = await supabase
-          .from('user_identity')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .maybeSingle();
-        setIdentity(data ?? null);
+        await loadUserData(session.user.id);
       } else {
         setIdentity(null);
+        setProfile(null);
       }
     });
 

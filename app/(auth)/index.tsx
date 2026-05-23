@@ -19,6 +19,8 @@ import AlmariLogo from '@/components/brand/AlmariLogo';
 import type { MicroCopy } from '@/types/database';
 
 const { width: SCREEN_W } = Dimensions.get('window');
+const PADDING_H = 28; // matches s.inner paddingHorizontal
+const SLIDE_W = SCREEN_W - PADDING_H * 2;
 
 // Slide background images — swap src to update, no other code changes needed.
 // Unused candidates kept here for easy rotation.
@@ -70,7 +72,7 @@ export default function Splash() {
   }, []);
 
   const goToSlide = useCallback((index: number) => {
-    scrollRef.current?.scrollTo({ x: SCREEN_W * index, animated: true });
+    scrollRef.current?.scrollTo({ x: SLIDE_W * index, animated: true });
     setActiveSlide(index);
   }, []);
 
@@ -79,7 +81,7 @@ export default function Splash() {
     autoTimer.current = setInterval(() => {
       setActiveSlide(prev => {
         const next = (prev + 1) % slides.length;
-        scrollRef.current?.scrollTo({ x: SCREEN_W * next, animated: true });
+        scrollRef.current?.scrollTo({ x: SLIDE_W * next, animated: true });
         return next;
       });
     }, 4000);
@@ -87,7 +89,7 @@ export default function Splash() {
   }, [slides]);
 
   const handleScrollEnd = (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+    const index = Math.round(e.nativeEvent.contentOffset.x / SLIDE_W);
     if (index !== activeSlide) {
       if (autoTimer.current) clearInterval(autoTimer.current);
       setActiveSlide(index);
@@ -235,7 +237,7 @@ const s = StyleSheet.create({
     paddingBottom: 16,
   },
   slide: {
-    width: SCREEN_W - 56, // full width minus horizontal padding × 2
+    width: SLIDE_W,
     paddingHorizontal: 4,
     gap: 8,
   },
