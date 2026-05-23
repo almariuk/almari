@@ -16,6 +16,7 @@ import {
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
 import { GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from '@/store/auth';
 import { supabase } from '@/lib/supabase';
 SplashScreen.preventAutoHideAsync();
@@ -34,10 +35,19 @@ export default function RootLayout() {
     GreatVibes_400Regular,
   });
 
-  const { session, initialized, identity, setSession, setInitialized, setIdentity, setProfile } = useAuthStore();
+  const { session, initialized, identityLoading, identity, setSession, setInitialized, setIdentityLoading, setIdentity, setProfile } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const splashHidden = useRef(false);
+
+  useEffect(() => {
+    const handleAuthUrl = (url: string) => {
+      supabase.auth.exchangeCodeForSession(url).catch(() => {});
+    };
+    Linking.getInitialURL().then(url => { if (url) handleAuthUrl(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => handleAuthUrl(url));
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     const loadUserData = async (userId: string) => {
@@ -69,7 +79,9 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
+        setIdentityLoading(true);
         await loadUserData(session.user.id);
+        setIdentityLoading(false);
       } else {
         setIdentity(null);
         setProfile(null);
@@ -93,14 +105,14 @@ export default function RootLayout() {
 
     if (!session && !inAuthGroup) {
       router.replace('/(auth)');
-    } else if (session && !identity && !onWelcome) {
+    } else if (session && !identity && !identityLoading && !onWelcome) {
       // Authenticated but no profile yet — new user needs onboarding
       router.replace('/(auth)/welcome');
     } else if (session && identity && inAuthGroup) {
       // Returning user who just signed in
       router.replace('/(app)');
     }
-  }, [session, identity, segments, initialized, fontsLoaded, fontError]);
+  }, [session, identity, identityLoading, segments, initialized, fontsLoaded, fontError]);
 
   return (
     <QueryClientProvider client={queryClient}>

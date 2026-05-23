@@ -135,6 +135,10 @@ export default function Welcome() {
 
             {/* ── Name fields ────────────────────────────────── */}
             <View style={s.section}>
+              <View style={s.fieldLabels}>
+                <Text style={[s.fieldLabel, s.fieldLabelFlex]}>First name <Text style={{ color: theme.error }}>*</Text></Text>
+                <Text style={[s.fieldLabel, s.fieldLabelInitial]}>Last initial <Text style={{ color: theme.error }}>*</Text></Text>
+              </View>
               <View style={s.fieldRow}>
                 <View style={[s.inputWrap, s.inputFlex, { borderColor: inputBorder('firstName'), backgroundColor: theme.inputBackground }]}>
                   <IconUser size={16} color={focusedField === 'firstName' ? theme.accent : theme.textSecondary} />
@@ -142,7 +146,7 @@ export default function Welcome() {
                     style={[s.input, { color: theme.text }]}
                     value={firstName}
                     onChangeText={setFirstName}
-                    placeholder="First name"
+                    placeholder="e.g. Sophie"
                     placeholderTextColor={theme.textDisabled}
                     autoCapitalize="words"
                     autoFocus
@@ -167,7 +171,7 @@ export default function Welcome() {
               </View>
 
               <Text style={s.hint}>
-                Just your initial — we keep it that way.
+                Only your first name and initial are shown to other members.
               </Text>
             </View>
 
@@ -318,6 +322,10 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       lineHeight: 17,
     },
 
+    fieldLabels: { flexDirection: 'row', gap: 10, marginBottom: 6 },
+    fieldLabel: { fontFamily: 'Inter_500Medium', fontSize: 12, color: theme.textSecondary },
+    fieldLabelFlex: { flex: 1 },
+    fieldLabelInitial: { width: 52, textAlign: 'center' },
     fieldRow: { flexDirection: 'row', gap: 10 },
     inputFlex: { flex: 1 },
     inputInitial: { width: 52 },

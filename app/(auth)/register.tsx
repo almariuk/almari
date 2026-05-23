@@ -10,8 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
-  Linking,
 } from 'react-native';
+import * as ExpoLinking from 'expo-linking';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -63,7 +63,7 @@ export default function Register() {
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     clearError();
-    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: 'almari://' } });
+    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: ExpoLinking.createURL('/') } });
     setLoading(false);
     if (err) { setError(err.message); return; }
     showInboxStage();
@@ -73,7 +73,7 @@ export default function Register() {
     setLoading(true);
     clearError();
     setResent(false);
-    await supabase.auth.resend({ type: 'signup', email: email.trim() });
+    await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: ExpoLinking.createURL('/') } });
     setLoading(false);
     setResent(true);
   };
@@ -123,15 +123,7 @@ export default function Register() {
             Tap the link in the email — it'll bring you straight back here.
           </Text>
 
-          <TouchableOpacity
-            style={[s.btnPrimary, { backgroundColor: theme.accent, marginTop: 32 }]}
-            onPress={() => Linking.openURL('mailto:')}
-            activeOpacity={0.85}
-          >
-            <Text style={[s.btnPrimaryText, { color: theme.accentText }]}>Open email app</Text>
-          </TouchableOpacity>
-
-          <View style={s.inboxFooter}>
+          <View style={[s.inboxFooter, { marginTop: 32 }]}>
             {resent
               ? <Text style={[s.linkText, { color: theme.success }]}>Link resent.</Text>
               : (
