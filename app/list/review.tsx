@@ -426,7 +426,7 @@ export default function ListReview() {
 
       // 6. Insert private seller motivation
       if (draft.motivationTypeId !== null) {
-        await supabase.from('private_seller_motivations').insert({
+        await supabase.from('private_seller_motivation').insert({
           listing_id: listingId,
           user_id: userId,
           motivation_type_id: draft.motivationTypeId,
