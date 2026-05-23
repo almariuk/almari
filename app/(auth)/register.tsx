@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,13 +20,14 @@ import {
   IconEye,
   IconEyeOff,
   IconArrowLeft,
+  IconMailForward,
 } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { Brand } from '@/constants/brand';
 
 type Mode = 'register' | 'signin';
-type Stage = 'credentials' | 'otp';
+type Stage = 'credentials' | 'check_inbox';
 
 export default function Register() {
   const theme = useTheme();
@@ -36,27 +38,25 @@ export default function Register() {
   const [stage, setStage] = useState<Stage>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resent, setResent] = useState(false);
   const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const otpSlide = useRef(new Animated.Value(0)).current;
+  const inboxFade = useRef(new Animated.Value(0)).current;
 
   const s = makeStyles(theme);
-
   const clearError = () => setError('');
 
-  const showOtpStage = useCallback(() => {
-    setStage('otp');
-    Animated.spring(otpSlide, {
+  const showInboxStage = () => {
+    setStage('check_inbox');
+    Animated.timing(inboxFade, {
       toValue: 1,
-      tension: 60,
-      friction: 10,
+      duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [otpSlide]);
+  };
 
   const handleRegister = async () => {
     if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
@@ -66,29 +66,16 @@ export default function Register() {
     const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
     setLoading(false);
     if (err) { setError(err.message); return; }
-    showOtpStage();
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) { setError('Please enter the 6-digit code.'); return; }
-    setLoading(true);
-    clearError();
-    const { error: err } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: otp.trim(),
-      type: 'signup',
-    });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    // _layout.tsx will detect session + no identity → redirect to welcome
-    router.replace('/(auth)/welcome');
+    showInboxStage();
   };
 
   const handleResend = async () => {
     setLoading(true);
     clearError();
+    setResent(false);
     await supabase.auth.resend({ type: 'signup', email: email.trim() });
     setLoading(false);
+    setResent(true);
   };
 
   const handleSignIn = async () => {
@@ -107,67 +94,61 @@ export default function Register() {
   const inputBorder = (field: string) =>
     focusedField === field ? theme.borderFocused : theme.border;
 
-  // ── OTP stage ──────────────────────────────────────────────
-  if (stage === 'otp') {
-    const translateY = otpSlide.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
+  // ── Check inbox stage ─────────────────────────────────────
+  // Supabase sends a confirmation link by default. When the user taps it,
+  // the deep link (almari://) returns them to the app, onAuthStateChange
+  // fires, and _layout.tsx routes them to the welcome screen automatically.
+  // No polling or manual verification needed here.
+  if (stage === 'check_inbox') {
     return (
-      <SafeAreaView style={[s.root]}>
-        <KeyboardAvoidingView
-          style={s.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-            <Animated.View style={[s.inner, { opacity: otpSlide, transform: [{ translateY }] }]}>
+      <SafeAreaView style={s.root}>
+        <Animated.View style={[s.inner, { opacity: inboxFade }]}>
 
-              <TouchableOpacity style={s.back} onPress={() => setStage('credentials')}>
-                <IconArrowLeft size={20} color={theme.textSecondary} />
-              </TouchableOpacity>
+          <TouchableOpacity style={s.back} onPress={() => { setStage('credentials'); setResent(false); }}>
+            <IconArrowLeft size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
 
-              <Text style={s.heading}>Check your email</Text>
-              <Text style={s.subheading}>
-                We sent a 6-digit code to{'\n'}
-                <Text style={[s.subheading, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
-                  {email.trim()}
-                </Text>
-              </Text>
+          <View style={s.inboxIcon}>
+            <IconMailForward size={52} color={theme.accent} strokeWidth={1.25} />
+          </View>
 
-              <View style={s.fieldGroup}>
-                <TextInput
-                  style={[s.otpInput, { borderColor: inputBorder('otp'), color: theme.text, backgroundColor: theme.inputBackground }]}
-                  value={otp}
-                  onChangeText={v => { setOtp(v.replace(/[^0-9]/g, '')); clearError(); }}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoFocus
-                  textAlign="center"
-                  onFocus={() => setFocusedField('otp')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="— — — — — —"
-                  placeholderTextColor={theme.textDisabled}
-                />
-              </View>
+          <Text style={s.heading}>Check your inbox</Text>
+          <Text style={s.subheading}>
+            We sent a confirmation link to{'\n'}
+            <Text style={[s.subheading, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
+              {email.trim()}
+            </Text>
+          </Text>
+          <Text style={s.inboxHint}>
+            Tap the link in the email — it'll bring you straight back here.
+          </Text>
 
-              {!!error && <Text style={s.errorText}>{error}</Text>}
+          <TouchableOpacity
+            style={[s.btnPrimary, { backgroundColor: theme.accent, marginTop: 32 }]}
+            onPress={() => Linking.openURL('mailto:')}
+            activeOpacity={0.85}
+          >
+            <Text style={[s.btnPrimaryText, { color: theme.accentText }]}>Open email app</Text>
+          </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[s.btnPrimary, { backgroundColor: theme.accent }]}
-                onPress={handleVerifyOtp}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading
-                  ? <ActivityIndicator color={theme.accentText} />
-                  : <Text style={[s.btnPrimaryText, { color: theme.accentText }]}>Verify email</Text>
-                }
-              </TouchableOpacity>
+          <View style={s.inboxFooter}>
+            {resent
+              ? <Text style={[s.linkText, { color: theme.success }]}>Link resent.</Text>
+              : (
+                <TouchableOpacity onPress={handleResend} disabled={loading}>
+                  <Text style={[s.linkText, { color: theme.accent }]}>
+                    {loading ? 'Sending…' : 'Resend link'}
+                  </Text>
+                </TouchableOpacity>
+              )
+            }
+            <Text style={[s.linkText, { color: theme.textDisabled }]}>·</Text>
+            <TouchableOpacity onPress={() => { setStage('credentials'); setResent(false); clearError(); }}>
+              <Text style={[s.linkText, { color: theme.textSecondary }]}>Wrong email?</Text>
+            </TouchableOpacity>
+          </View>
 
-              <TouchableOpacity style={s.linkBtn} onPress={handleResend} disabled={loading}>
-                <Text style={[s.linkText, { color: theme.accent }]}>Resend code</Text>
-              </TouchableOpacity>
-
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </Animated.View>
       </SafeAreaView>
     );
   }
@@ -196,7 +177,6 @@ export default function Register() {
             </Text>
 
             <View style={s.fieldGroup}>
-              {/* Email */}
               <View style={[s.inputWrap, { borderColor: inputBorder('email'), backgroundColor: theme.inputBackground }]}>
                 <IconMail size={18} color={focusedField === 'email' ? theme.accent : theme.textSecondary} />
                 <TextInput
@@ -213,7 +193,6 @@ export default function Register() {
                 />
               </View>
 
-              {/* Password */}
               <View style={[s.inputWrap, { borderColor: inputBorder('password'), backgroundColor: theme.inputBackground }]}>
                 <IconLock size={18} color={focusedField === 'password' ? theme.accent : theme.textSecondary} />
                 <TextInput
@@ -263,10 +242,7 @@ export default function Register() {
               onPress={() => { setMode(m => m === 'register' ? 'signin' : 'register'); clearError(); }}
             >
               <Text style={[s.linkText, { color: theme.textSecondary }]}>
-                {mode === 'register'
-                  ? 'Already have an account? '
-                  : "Don't have one? "
-                }
+                {mode === 'register' ? 'Already have an account? ' : "Don't have one? "}
                 <Text style={{ color: theme.accent }}>
                   {mode === 'register' ? 'Sign in' : 'Get started'}
                 </Text>
@@ -282,11 +258,12 @@ export default function Register() {
 
 function makeStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
-    root: { flex: 1, backgroundColor: theme.background },
-    flex: { flex: 1 },
+    root:   { flex: 1, backgroundColor: theme.background },
+    flex:   { flex: 1 },
     scroll: { flexGrow: 1 },
-    inner: { flex: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 32 },
-    back: { marginBottom: 28, alignSelf: 'flex-start' },
+    inner:  { flex: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 32 },
+    back:   { marginBottom: 28, alignSelf: 'flex-start' },
+
     heading: {
       fontFamily: 'CormorantGaramond_700Bold',
       fontSize: 34,
@@ -298,8 +275,15 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontSize: 15,
       color: theme.textSecondary,
       lineHeight: 22,
-      marginBottom: 32,
+      marginBottom: 16,
     },
+
+    // Inbox stage
+    inboxIcon:   { alignItems: 'center', marginBottom: 24, marginTop: 16 },
+    inboxHint:   { fontFamily: 'Inter_400Regular', fontSize: 14, color: theme.textSecondary, lineHeight: 20, marginTop: 4 },
+    inboxFooter: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 20 },
+
+    // Credentials stage
     fieldGroup: { gap: 12, marginBottom: 8 },
     inputWrap: {
       flexDirection: 'row',
@@ -314,14 +298,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       flex: 1,
       fontFamily: 'Inter_400Regular',
       fontSize: 15,
-    },
-    otpInput: {
-      borderWidth: 1.5,
-      borderRadius: 10,
-      paddingVertical: 18,
-      fontSize: 28,
-      fontFamily: 'Inter_500Medium',
-      letterSpacing: 12,
     },
     forgotText: {
       fontFamily: 'Inter_400Regular',
@@ -344,7 +320,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontFamily: Platform.OS === 'ios' ? 'AvenirNext-DemiBold' : 'Inter_600SemiBold',
       fontSize: 16,
     },
-    linkBtn: { alignItems: 'center', paddingVertical: 14 },
+    linkBtn:  { alignItems: 'center', paddingVertical: 14 },
     linkText: { fontFamily: 'Inter_400Regular', fontSize: 14 },
   });
 }
