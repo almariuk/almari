@@ -18,7 +18,12 @@ import { useTheme } from '@/hooks/useTheme';
 import { useListingDraftStore } from '@/store/listing-draft';
 import type { ListingDraftState } from '@/store/listing-draft';
 import FireworkTrust from '@/components/brand/FireworkTrust';
-import type { ItemCareStatusRow, BenchmarkPriceRow, DailyExchangeRateRow } from '@/types/database';
+import type {
+  ConditionTierRow,
+  ItemCareStatusRow,
+  BenchmarkPriceRow,
+  DailyExchangeRateRow,
+} from '@/types/database';
 
 const STALE = 10 * 60 * 1000;
 
@@ -40,6 +45,7 @@ function getStateLabel(score: number, maxScore: number): string {
 
 function computeTrust(
   draft: ReturnType<typeof useListingDraftStore.getState>,
+  conditionRows: ConditionTierRow[],
   careRows: ItemCareStatusRow[],
 ): TrustComponent[] {
   // Photos — 15 pts max
@@ -58,6 +64,14 @@ function computeTrust(
   // Colour — 4 pts
   const colourEarned = draft.colourId !== null ? 4 : 0;
 
+  // Condition — from DB row (same pattern as care status)
+  const conditionRow = conditionRows.find((r) => r.id === draft.conditionId);
+  const conditionEarned = conditionRow?.listing_trust_contribution ?? 0;
+  const conditionMax =
+    conditionRows.length > 0
+      ? Math.max(...conditionRows.map((r) => r.listing_trust_contribution))
+      : 10;
+
   // Provenance — 20 pts max
   let provenanceEarned = 0;
   if (draft.isHeirloom) {
@@ -70,12 +84,13 @@ function computeTrust(
     if (draft.originalPriceInr.trim().length > 0) provenanceEarned += 5;
   }
 
-  // Care status — up to 10 pts from DB row
+  // Care status — from DB row
   const careRow = careRows.find((r) => r.id === draft.careStatusId);
   const careEarned = careRow?.listing_trust_contribution ?? 0;
-  const careMax = careRows.length > 0 ? Math.max(...careRows.map((r) => r.listing_trust_contribution)) : 10;
+  const careMax =
+    careRows.length > 0 ? Math.max(...careRows.map((r) => r.listing_trust_contribution)) : 10;
 
-  // Measurements — 18 pts max (~3 each, label size = 1, shoe = 2)
+  // Measurements — 18 pts max
   const measurements: [string, number][] = [
     [draft.listingBustCm, 3],
     [draft.listingWaistCm, 3],
@@ -85,34 +100,38 @@ function computeTrust(
     [draft.listingUkShoeSize, 2],
     [draft.listingLabelSize, 1],
   ];
-  const measurementsEarned = measurements.reduce((acc, [v, pts]) => acc + (v.trim().length > 0 ? pts : 0), 0);
+  const measurementsEarned = measurements.reduce(
+    (acc: number, [v, pts]: [string, number]) => acc + (v.trim().length > 0 ? pts : 0),
+    0,
+  );
 
   // Set contents — 8 pts max
   const setEarned =
     (draft.whatIsIncluded.trim().length > 0 ? 3 : 0) +
     (draft.isSetComplete !== null ? 5 : 0);
 
-  // Motivation — 5 pts
+  // Why selling — 5 pts
   const motivationEarned = draft.motivationTypeId !== null ? 5 : 0;
+
+  // Additional notes — 5 pts
+  const notesEarned = draft.additionalNotes.trim().length > 0 ? 5 : 0;
 
   return [
     { label: 'Photos', earned: photoEarned, max: 15 },
     { label: 'Craft detail', earned: craftEarned, max: 11 },
     { label: 'Occasion', earned: occasionEarned, max: 4 },
     { label: 'Colour', earned: colourEarned, max: 4 },
+    { label: 'Condition', earned: conditionEarned, max: conditionMax },
     { label: 'Provenance', earned: provenanceEarned, max: 20 },
     { label: 'Care', earned: careEarned, max: careMax },
     { label: 'Measurements', earned: measurementsEarned, max: 18 },
     { label: 'Set info', earned: setEarned, max: 8 },
     { label: 'Why selling', earned: motivationEarned, max: 5 },
+    { label: 'Additional notes', earned: notesEarned, max: 5 },
   ];
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-
-function gbp(pence: number): string {
-  return `£${(pence / 100).toFixed(2)}`;
-}
 
 function bestBenchmark(
   rows: BenchmarkPriceRow[],
@@ -120,14 +139,22 @@ function bestBenchmark(
   patternId: number | null,
 ): BenchmarkPriceRow | null {
   if (rows.length === 0) return null;
-  // Prefer exact match, then partial, then any
-  const exactMatch = rows.find((r) => r.fabric_type_id === fabricTypeId && r.pattern_id === patternId);
+  const exactMatch = rows.find(
+    (r) => r.fabric_type_id === fabricTypeId && r.pattern_id === patternId,
+  );
   if (exactMatch) return exactMatch;
-  const fabricMatch = fabricTypeId !== null ? rows.find((r) => r.fabric_type_id === fabricTypeId) : null;
+  const fabricMatch =
+    fabricTypeId !== null ? rows.find((r) => r.fabric_type_id === fabricTypeId) : null;
   if (fabricMatch) return fabricMatch;
-  const patternMatch = patternId !== null ? rows.find((r) => r.pattern_id === patternId) : null;
+  const patternMatch =
+    patternId !== null ? rows.find((r) => r.pattern_id === patternId) : null;
   if (patternMatch) return patternMatch;
   return rows[0];
+}
+
+function isProvenanceComplete(draft: ReturnType<typeof useListingDraftStore.getState>): boolean {
+  if (draft.isHeirloom) return draft.heirloomStory.trim().length > 0;
+  return draft.provenanceCityId !== null;
 }
 
 // ── Screen ────────────────────────────────────────────────────
@@ -140,12 +167,21 @@ export default function ListPricing() {
   const draft = useListingDraftStore();
   const setAskingPricePence = useListingDraftStore((st: ListingDraftState) => st.setAskingPricePence);
 
-  // Price input as string for controlled TextInput
   const [priceText, setPriceText] = useState<string>(
     draft.askingPricePence !== null ? String(draft.askingPricePence / 100) : '',
   );
 
   // ── Queries ────────────────────────────────────────────────
+
+  const conditionQuery = useQuery<ConditionTierRow[]>({
+    queryKey: ['condition_tiers'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('condition_tiers').select('*');
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: STALE,
+  });
 
   const careQuery = useQuery<ItemCareStatusRow[]>({
     queryKey: ['item_care_status'],
@@ -171,7 +207,7 @@ export default function ListPricing() {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: draft.subcategoryId !== null,
+    enabled: draft.subcategoryId !== null && isProvenanceComplete(draft),
     staleTime: STALE,
   });
 
@@ -189,13 +225,14 @@ export default function ListPricing() {
       if (error) throw error;
       return data;
     },
+    enabled: isProvenanceComplete(draft),
     staleTime: STALE,
   });
 
   // ── Trust score ─────────────────────────────────────────────
 
   const components = useMemo(
-    () => computeTrust(draft, careQuery.data ?? []),
+    () => computeTrust(draft, conditionQuery.data ?? [], careQuery.data ?? []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       draft.photoUris.length,
@@ -204,6 +241,7 @@ export default function ListPricing() {
       draft.fabricTypeId,
       draft.occasionBucketId,
       draft.colourId,
+      draft.conditionId,
       draft.isHeirloom,
       draft.heirloomStory,
       draft.provenanceCityId,
@@ -222,6 +260,8 @@ export default function ListPricing() {
       draft.whatIsIncluded,
       draft.isSetComplete,
       draft.motivationTypeId,
+      draft.additionalNotes,
+      conditionQuery.data,
       careQuery.data,
     ],
   );
@@ -232,21 +272,21 @@ export default function ListPricing() {
 
   // ── Price guide ──────────────────────────────────────────────
 
+  const provenanceComplete = isProvenanceComplete(draft);
+
   const benchmark = useMemo(
     () => bestBenchmark(benchmarkQuery.data ?? [], draft.fabricTypeId, draft.patternId),
     [benchmarkQuery.data, draft.fabricTypeId, draft.patternId],
   );
 
-  // Pre-populate asking price from benchmark mid when it first loads
   useEffect(() => {
     if (benchmark?.price_mid_gbp && draft.askingPricePence === null) {
       const midPence = Math.round(benchmark.price_mid_gbp * 100);
       setAskingPricePence(midPence);
-      setPriceText((benchmark.price_mid_gbp).toFixed(2));
+      setPriceText(benchmark.price_mid_gbp.toFixed(2));
     }
   }, [benchmark]);
 
-  // Original cost in GBP
   const originalCostGbp = useMemo(() => {
     const inrStr = draft.originalPriceInr.trim();
     const rate = rateQuery.data?.rate;
@@ -256,10 +296,9 @@ export default function ListPricing() {
     return inr / rate;
   }, [draft.originalPriceInr, rateQuery.data]);
 
-  // ── Price input handling ─────────────────────────────────────
+  // ── Price input ───────────────────────────────────────────────
 
   const onPriceChange = (raw: string) => {
-    // Allow digits and at most one decimal point
     const cleaned = raw.replace(/[^0-9.]/g, '').replace(/^(\d*\.\d{0,2}).*$/, '$1');
     setPriceText(cleaned);
     const parsed = parseFloat(cleaned);
@@ -272,8 +311,6 @@ export default function ListPricing() {
 
   const canProceed = draft.askingPricePence !== null && draft.askingPricePence > 0;
 
-  // ── Dot colour for trust components ──────────────────────────
-
   function dotColour(earned: number, max: number): string {
     if (earned === 0) return theme.border;
     if (earned === max) return theme.success;
@@ -283,13 +320,15 @@ export default function ListPricing() {
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {/* Progress bar */}
         <View style={s.progressTrack}>
           <View style={[s.progressFill, { width: '75%' }]} />
         </View>
 
-        <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled">
-          {/* Header */}
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={s.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={s.header}>
             <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
               <IconChevronLeft size={22} color={theme.text} />
@@ -314,7 +353,7 @@ export default function ListPricing() {
               </View>
 
               <View style={s.componentList}>
-                {components.map((c) => (
+                {components.map((c: TrustComponent) => (
                   <View key={c.label} style={s.componentRow}>
                     <View style={[s.dot, { backgroundColor: dotColour(c.earned, c.max) }]} />
                     <Text style={s.componentLabel}>{c.label}</Text>
@@ -328,23 +367,23 @@ export default function ListPricing() {
             </View>
           </View>
 
-          {/* ── Price guide ──────────────────────────────────────── */}
-          {benchmark && (
+          {/* ── Price guide — only when provenance complete ──────── */}
+          {provenanceComplete && benchmark && (
             <View style={s.section}>
               <Text style={s.sectionTitle}>What's it worth?</Text>
               <View style={s.priceGuideCard}>
                 {benchmark.price_low_gbp !== null && benchmark.price_high_gbp !== null && (
                   <View style={s.priceRangeRow}>
-                    <Text style={s.priceRangeLabel}>Similar items</Text>
+                    <Text style={s.priceRangeLabel}>Similar items sell for</Text>
                     <Text style={s.priceRangeValue}>
                       £{benchmark.price_low_gbp.toFixed(0)} – £{benchmark.price_high_gbp.toFixed(0)}
                     </Text>
                   </View>
                 )}
                 {originalCostGbp !== null && (
-                  <View style={[s.priceRangeRow, { marginTop: 8 }]}>
+                  <View style={[s.priceRangeRow, { marginTop: 10 }]}>
                     <Text style={s.priceRangeLabel}>
-                      Your original cost{draft.originalPriceApproximate ? ' (approx.)' : ''}
+                      What you paid{draft.originalPriceApproximate ? ' (approx.)' : ''}
                     </Text>
                     <Text style={s.priceRangeValue}>≈ £{originalCostGbp.toFixed(0)}</Text>
                   </View>
@@ -382,7 +421,6 @@ export default function ListPricing() {
           <View style={{ height: 100 }} />
         </ScrollView>
 
-        {/* Bottom bar */}
         <View style={s.bottomBar}>
           <TouchableOpacity
             style={[s.nextBtn, !canProceed && s.nextBtnDisabled]}
@@ -434,7 +472,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 12,
     },
 
-    // Trust card
     trustCard: {
       backgroundColor: theme.surface,
       borderRadius: 16,
@@ -476,11 +513,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       gap: 10,
     },
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
+    dot: { width: 8, height: 8, borderRadius: 4 },
     componentLabel: {
       flex: 1,
       fontFamily: 'Inter_400Regular',
@@ -498,7 +531,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       color: theme.textSecondary,
     },
 
-    // Price guide
     priceGuideCard: {
       backgroundColor: theme.surface,
       borderRadius: 16,
@@ -535,7 +567,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       borderRadius: 2,
     },
 
-    // Asking price
     priceInputCard: {
       backgroundColor: theme.surface,
       borderRadius: 16,
@@ -569,7 +600,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginTop: 8,
     },
 
-    // Bottom bar
     bottomBar: {
       paddingHorizontal: 20,
       paddingVertical: 12,

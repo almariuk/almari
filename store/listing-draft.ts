@@ -38,6 +38,9 @@ interface ListingDraftData {
   whatIsIncluded: string;
   isSetComplete: boolean | null;
 
+  // Step 2 — Additional notes
+  additionalNotes: string;
+
   // Step 2 — Postage
   packageBandId: number | null;
   postageServiceId: number | null;
@@ -83,6 +86,8 @@ interface ListingDraftActions {
   // Step 2 — Set
   setWhatIsIncluded: (v: string) => void;
   setIsSetComplete: (v: boolean | null) => void;
+  // Step 2 — Additional notes
+  setAdditionalNotes: (v: string) => void;
   // Step 2 — Postage
   setPackageBandId: (id: number | null) => void;
   setPostageServiceId: (id: number | null) => void;
@@ -125,6 +130,7 @@ const initialData: ListingDraftData = {
   listingLabelSize: '',
   whatIsIncluded: '',
   isSetComplete: null,
+  additionalNotes: '',
   packageBandId: null,
   postageServiceId: null,
   askingPricePence: null,
@@ -183,6 +189,9 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   // Step 2 — Set
   setWhatIsIncluded: (v) => set({ whatIsIncluded: v }),
   setIsSetComplete: (v) => set({ isSetComplete: v }),
+
+  // Step 2 — Additional notes
+  setAdditionalNotes: (v) => set({ additionalNotes: v }),
 
   // Step 2 — Postage
   // Changing band invalidates any previously selected service

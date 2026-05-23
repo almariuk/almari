@@ -511,6 +511,36 @@ export default function ListStep2() {
             )}
           </View>
 
+          {/* ── Additional notes ─────────────────────────────── */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Anything else to add?{' '}
+              <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            <Text style={[s.hint, { color: theme.textDisabled }]}>
+              Anything a buyer should know — minor marks, alterations, sentimental details.
+            </Text>
+            <TextInput
+              style={[
+                s.textArea,
+                {
+                  borderColor: inputBorder('notes'),
+                  backgroundColor: theme.inputBackground,
+                  color: theme.text,
+                },
+              ]}
+              value={draft.additionalNotes}
+              onChangeText={draft.setAdditionalNotes}
+              placeholder="e.g. Small mark on inner hem, not visible when worn."
+              placeholderTextColor={theme.textDisabled}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              onFocus={() => setFocusedField('notes')}
+              onBlur={() => setFocusedField(null)}
+            />
+          </View>
+
           {/* ── Postage ───────────────────────────────────────── */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>
