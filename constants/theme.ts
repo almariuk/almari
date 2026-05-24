@@ -30,6 +30,8 @@ export type Theme = {
   brandSecondary: string;
   brandCream: string;
   brandCharcoal: string;
+  // Search bar surface — a tinted lavender distinct from the page background
+  searchSurface: string;
 };
 
 export const lightTheme: Theme = {
@@ -52,6 +54,7 @@ export const lightTheme: Theme = {
   brandSecondary: Brand.secondaryColour,
   brandCream: '#FEF9E7',
   brandCharcoal: '#2C3032',
+  searchSurface: '#EDE7F6',
 };
 
 export const darkTheme: Theme = {
@@ -74,4 +77,5 @@ export const darkTheme: Theme = {
   brandSecondary: Brand.secondaryColour,
   brandCream: '#FEF9E7',
   brandCharcoal: '#2C3032',
+  searchSurface: '#261B38',
 };

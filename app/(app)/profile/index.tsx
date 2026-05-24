@@ -23,7 +23,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store/auth';
-import DiyaTrust from '@/components/brand/DiyaTrust';
+import { IconCandleFilled } from '@tabler/icons-react-native';
+import { useTrustTiers, getDiyaColour } from '@/hooks/useTrustTiers';
 import type { UserAddressRow, PayoutRow, TransactionRow, PayoutStatus, TransactionStatus } from '@/types/database';
 
 // ── Constants ─────────────────────────────────────────────────
@@ -325,6 +326,7 @@ export default function Profile() {
 
   // ── Derived ───────────────────────────────────────────────────
 
+  const { data: trustTiers = [] } = useTrustTiers();
   const tier = getTier(profile?.trust_score_cached ?? 0);
 
   const measurementCount = useMemo(
@@ -359,7 +361,7 @@ export default function Profile() {
             </Text>
             <Text style={s.headerTier}>{tier.name}</Text>
           </View>
-          <DiyaTrust score={profile?.trust_score_cached ?? 0} size={56} />
+          <IconCandleFilled size={56} color={getDiyaColour(profile?.trust_score_cached ?? 0, trustTiers)} />
         </View>
 
         {/* Personal details */}
@@ -530,7 +532,7 @@ export default function Profile() {
         {/* Trust score */}
         <SectionCard title="Your trust">
           <View style={s.trustCenter}>
-            <DiyaTrust score={profile?.trust_score_cached ?? 0} size={72} />
+            <IconCandleFilled size={72} color={getDiyaColour(profile?.trust_score_cached ?? 0, trustTiers)} />
             <Text style={[s.tierName, { color: theme.text }]}>{tier.name}</Text>
             <Text style={[s.tierCopy, { color: theme.textSecondary }]}>{tier.copy}</Text>
           </View>
