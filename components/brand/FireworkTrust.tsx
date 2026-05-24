@@ -52,7 +52,7 @@ function spokePath(cx: number, cy: number, angleDeg: number, inner: number, oute
 
 // Star geometry and spoke configuration per state
 const CONFIGS = [
-  { R: 2.5, r: 1.0, opacity: 0.40, spokeAngles: [] as number[], spokeInner: 0, spokeOuter: 0 },
+  { R: 2.5, r: 1.0, opacity: 0.60, spokeAngles: [] as number[], spokeInner: 0, spokeOuter: 0 },
   { R: 4.0, r: 1.6, opacity: 0.62, spokeAngles: [] as number[], spokeInner: 0, spokeOuter: 0 },
   { R: 5.0, r: 2.0, opacity: 0.78, spokeAngles: [] as number[], spokeInner: 0, spokeOuter: 0 },
   { R: 6.0, r: 2.3, opacity: 0.92, spokeAngles: [45, 135, 225, 315],         spokeInner: 7.2, spokeOuter: 8.8  },
