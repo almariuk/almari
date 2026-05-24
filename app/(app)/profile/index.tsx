@@ -225,20 +225,36 @@ export default function Profile() {
   // ── Add address state ─────────────────────────────────────────
 
   const [addingAddress, setAddingAddress] = useState(false);
+  const [addrPostcode, setAddrPostcode] = useState('');
   const [addrLine1, setAddrLine1] = useState('');
   const [addrLine2, setAddrLine2] = useState('');
   const [addrCity, setAddrCity] = useState('');
-  const [addrPostcode, setAddrPostcode] = useState('');
+  const [addrError, setAddrError] = useState('');
   const [savingAddr, setSavingAddr] = useState(false);
 
   const resetAddrForm = () => {
-    setAddrLine1(''); setAddrLine2(''); setAddrCity(''); setAddrPostcode('');
+    setAddrPostcode(''); setAddrLine1(''); setAddrLine2(''); setAddrCity('');
+    setAddrError('');
     setAddingAddress(false);
   };
 
   const saveAddress = async () => {
     if (!addrLine1.trim() || !addrCity.trim() || !addrPostcode.trim()) return;
     setSavingAddr(true);
+    setAddrError('');
+    // Validate postcode against Postcodes.io (free, no API key)
+    const postcode = addrPostcode.trim().toUpperCase().replace(/\s+/g, '');
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${postcode}/validate`);
+      const json = await res.json();
+      if (!json.result) {
+        setAddrError('Please enter a valid UK postcode.');
+        setSavingAddr(false);
+        return;
+      }
+    } catch {
+      // Network error — don't block save
+    }
     const isFirst = (addressQuery.data ?? []).length === 0;
     await supabase.from('user_addresses').insert({
       user_id: identityId,
@@ -468,22 +484,47 @@ export default function Profile() {
             </TouchableOpacity>
           ) : (
             <View style={[s.addrForm, { borderColor: theme.border }]}>
-              {[
-                { placeholder: 'Address line 1', value: addrLine1, set: setAddrLine1, required: true },
-                { placeholder: 'Address line 2 (optional)', value: addrLine2, set: setAddrLine2, required: false },
-                { placeholder: 'City / Town', value: addrCity, set: setAddrCity, required: true },
-                { placeholder: 'Postcode', value: addrPostcode, set: setAddrPostcode, required: true },
-              ].map(({ placeholder, value, set }) => (
-                <TextInput
-                  key={placeholder}
-                  style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
-                  value={value}
-                  onChangeText={set}
-                  placeholder={placeholder}
-                  placeholderTextColor={theme.textDisabled}
-                  autoCapitalize={placeholder.includes('Postcode') ? 'characters' : 'words'}
-                />
-              ))}
+              <TextInput
+                style={[s.addrInput, { borderColor: addrError ? theme.error : theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
+                value={addrPostcode}
+                onChangeText={(v) => { setAddrPostcode(v); setAddrError(''); }}
+                placeholder="Postcode"
+                placeholderTextColor={theme.textDisabled}
+                autoCapitalize="characters"
+                autoComplete="postal-code"
+                textContentType="postalCode"
+              />
+              {!!addrError && (
+                <Text style={[s.addrErrorText, { color: theme.error }]}>{addrError}</Text>
+              )}
+              <TextInput
+                style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
+                value={addrLine1}
+                onChangeText={setAddrLine1}
+                placeholder="Address line 1"
+                placeholderTextColor={theme.textDisabled}
+                autoCapitalize="words"
+                autoComplete="street-address"
+                textContentType="streetAddressLine1"
+              />
+              <TextInput
+                style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
+                value={addrLine2}
+                onChangeText={setAddrLine2}
+                placeholder="Address line 2 (optional)"
+                placeholderTextColor={theme.textDisabled}
+                autoCapitalize="words"
+                textContentType="streetAddressLine2"
+              />
+              <TextInput
+                style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
+                value={addrCity}
+                onChangeText={setAddrCity}
+                placeholder="Town / City"
+                placeholderTextColor={theme.textDisabled}
+                autoCapitalize="words"
+                textContentType="addressCity"
+              />
               <View style={s.inlineButtons}>
                 <TouchableOpacity
                   style={[s.inlineSave, { backgroundColor: theme.accent, opacity: (!addrLine1.trim() || !addrCity.trim() || !addrPostcode.trim()) ? 0.5 : 1 }]}
@@ -674,6 +715,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     addAddrText: { fontFamily: 'Inter_500Medium', fontSize: 14 },
     addrForm:    { borderWidth: 1.5, borderRadius: 12, padding: 12, gap: 8 },
     addrInput:   { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontFamily: 'Inter_400Regular', fontSize: 14 },
+    addrErrorText: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: -4 },
 
     trustCenter: { alignItems: 'center', paddingVertical: 8, gap: 8 },
     tierName:    { fontFamily: 'CormorantGaramond_700Bold', fontSize: 26 },
