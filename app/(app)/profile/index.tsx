@@ -250,7 +250,7 @@ export default function Profile() {
     });
     setSavingAddr(false);
     resetAddrForm();
-    qc.invalidateQueries({ queryKey: ['user_addresses', userId] });
+    qc.invalidateQueries({ queryKey: ['user_addresses', identityId] });
   };
 
   const setDefaultAddress = async (addrId: string) => {
@@ -261,12 +261,12 @@ export default function Profile() {
         supabase.from('user_addresses').update({ is_default: a.id === addrId }).eq('id', a.id),
       ),
     );
-    qc.invalidateQueries({ queryKey: ['user_addresses', userId] });
+    qc.invalidateQueries({ queryKey: ['user_addresses', identityId] });
   };
 
   const deleteAddress = async (addrId: string) => {
     await supabase.from('user_addresses').delete().eq('id', addrId);
-    qc.invalidateQueries({ queryKey: ['user_addresses', userId] });
+    qc.invalidateQueries({ queryKey: ['user_addresses', identityId] });
   };
 
   // ── Change password ───────────────────────────────────────────

@@ -102,9 +102,8 @@ export default function ListStep2() {
 
   // ── Derived data ──────────────────────────────────────────────
 
-  const selectedCity = cities.find((c) => c.id === draft.provenanceCityId) ?? null;
-  const pricePrefix = selectedCity?.country === 'UK' ? '£' : '₹';
   const areas = allAreas.filter((a) => a.city_id === draft.provenanceCityId);
+  const pricePrefix = draft.originalPriceCurrency === 'GBP' ? '£' : '₹';
   const bandPrices = allPostagePrices.filter((p) => p.band_id === draft.packageBandId);
 
   const canProceed = draft.packageBandId !== null && draft.postageServiceId !== null;
@@ -208,7 +207,15 @@ export default function ListStep2() {
                               { borderColor: selected ? theme.accent : theme.border },
                               selected && { backgroundColor: theme.accent },
                             ]}
-                            onPress={() => draft.setProvenanceCityId(selected ? null : city.id)}
+                            onPress={() => {
+                              if (selected) {
+                                draft.setProvenanceCityId(null);
+                                draft.setOriginalPriceCurrency('INR');
+                              } else {
+                                draft.setProvenanceCityId(city.id);
+                                draft.setOriginalPriceCurrency(city.country === 'UK' ? 'GBP' : 'INR');
+                              }
+                            }}
                             activeOpacity={0.8}
                           >
                             <Text
@@ -222,9 +229,58 @@ export default function ListStep2() {
                           </TouchableOpacity>
                         );
                       })}
+                      <TouchableOpacity
+                        style={[
+                          s.chip,
+                          { borderColor: draft.provenanceCityOther ? theme.accent : theme.border },
+                          draft.provenanceCityOther && { backgroundColor: theme.accent },
+                        ]}
+                        onPress={() => {
+                          if (draft.provenanceCityOther) {
+                            draft.setProvenanceCityOther(false);
+                          } else {
+                            draft.setProvenanceCityId(null);
+                            draft.setProvenanceCityOther(true);
+                            draft.setOriginalPriceCurrency('INR');
+                          }
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[s.chipText, { color: draft.provenanceCityOther ? theme.accentText : theme.text }]}>
+                          Other
+                        </Text>
+                      </TouchableOpacity>
                     </ScrollView>
                   </View>
                 ) : null}
+
+                {/* Currency toggle — only when Other is selected */}
+                {draft.provenanceCityOther && (
+                  <View style={s.subSection}>
+                    <Text style={[s.subSectionLabel, { color: theme.textSecondary }]}>Currency</Text>
+                    <View style={s.chipsRow}>
+                      {(['INR', 'GBP'] as const).map((currency) => {
+                        const selected = draft.originalPriceCurrency === currency;
+                        return (
+                          <TouchableOpacity
+                            key={currency}
+                            style={[
+                              s.chip,
+                              { borderColor: selected ? theme.accent : theme.border },
+                              selected && { backgroundColor: theme.accent },
+                            ]}
+                            onPress={() => draft.setOriginalPriceCurrency(currency)}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={[s.chipText, { color: selected ? theme.accentText : theme.text }]}>
+                              {currency === 'INR' ? '₹ INR' : '£ GBP'}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
 
                 {/* Area (cascades from city) */}
                 {draft.provenanceCityId !== null && areas.length > 0 && (

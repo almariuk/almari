@@ -120,7 +120,7 @@ export default function ListPricing() {
   });
 
   const selectedCity = citiesQuery.data?.find((c) => c.id === draft.provenanceCityId) ?? null;
-  const isGbp = selectedCity?.country === 'UK';
+  const isGbp = selectedCity?.country === 'UK' || draft.originalPriceCurrency === 'GBP';
 
   const rateQuery = useQuery<DailyExchangeRateRow | null>({
     queryKey: ['exchange_rate', 'INR', 'GBP'],

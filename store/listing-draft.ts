@@ -19,10 +19,12 @@ interface ListingDraftData {
   isHeirloom: boolean;
   heirloomStory: string;
   provenanceCityId: number | null;
+  provenanceCityOther: boolean;
   provenanceAreaId: number | null;
   sellerTypeId: number | null;
   purchaseYear: string;
   originalPriceInr: string;
+  originalPriceCurrency: 'INR' | 'GBP';
   originalPriceApproximate: boolean;
 
   // Step 2 — Garment measurements
@@ -70,10 +72,12 @@ interface ListingDraftActions {
   setIsHeirloom: (v: boolean) => void;
   setHeirloomStory: (v: string) => void;
   setProvenanceCityId: (id: number | null) => void;
+  setProvenanceCityOther: (v: boolean) => void;
   setProvenanceAreaId: (id: number | null) => void;
   setSellerTypeId: (id: number | null) => void;
   setPurchaseYear: (v: string) => void;
   setOriginalPriceInr: (v: string) => void;
+  setOriginalPriceCurrency: (v: 'INR' | 'GBP') => void;
   setOriginalPriceApproximate: (v: boolean) => void;
   // Step 2 — Measurements
   setListingBustCm: (v: string) => void;
@@ -116,10 +120,12 @@ const initialData: ListingDraftData = {
   isHeirloom: false,
   heirloomStory: '',
   provenanceCityId: null,
+  provenanceCityOther: false,
   provenanceAreaId: null,
   sellerTypeId: null,
   purchaseYear: '',
   originalPriceInr: '',
+  originalPriceCurrency: 'INR',
   originalPriceApproximate: false,
   listingBustCm: '',
   listingWaistCm: '',
@@ -161,20 +167,24 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
         ? {
             isHeirloom: true,
             provenanceCityId: null,
+            provenanceCityOther: false,
             provenanceAreaId: null,
             sellerTypeId: null,
             purchaseYear: '',
             originalPriceInr: '',
+            originalPriceCurrency: 'INR',
             originalPriceApproximate: false,
           }
         : { isHeirloom: false, heirloomStory: '' }
     ),
   setHeirloomStory: (v) => set({ heirloomStory: v }),
-  setProvenanceCityId: (id) => set({ provenanceCityId: id, provenanceAreaId: null, originalPriceInr: '', originalPriceApproximate: false }),
+  setProvenanceCityId: (id) => set({ provenanceCityId: id, provenanceCityOther: false, provenanceAreaId: null, originalPriceInr: '', originalPriceApproximate: false }),
+  setProvenanceCityOther: (v) => set({ provenanceCityOther: v }),
   setProvenanceAreaId: (id) => set({ provenanceAreaId: id }),
   setSellerTypeId: (id) => set({ sellerTypeId: id }),
   setPurchaseYear: (v) => set({ purchaseYear: v }),
   setOriginalPriceInr: (v) => set({ originalPriceInr: v }),
+  setOriginalPriceCurrency: (v) => set({ originalPriceCurrency: v }),
   setOriginalPriceApproximate: (v) => set({ originalPriceApproximate: v }),
 
   // Step 2 — Measurements

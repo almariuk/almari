@@ -110,7 +110,7 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           >
             {'  '}{data.sellerName}
           </Text>
-          <FireworkTrust score={data.listingTrustScore} maxScore={maxTrustScore} size={52} />
+          <FireworkTrust score={data.listingTrustScore} maxScore={maxTrustScore} size={72} />
         </View>
 
         {/* Why selling — the human touch */}

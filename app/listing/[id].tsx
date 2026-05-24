@@ -194,7 +194,7 @@ export default function ListingDetail() {
             <Text style={[s.sellerName, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
               {'  '}{listing.sellerName}
             </Text>
-            <FireworkTrust score={listing.listingTrustScore} maxScore={maxTrustScore} size={56} />
+            <FireworkTrust score={listing.listingTrustScore} maxScore={maxTrustScore} size={84} />
           </View>
 
           {/* Why selling */}
