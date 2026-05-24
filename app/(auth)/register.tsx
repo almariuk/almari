@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,7 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  Animated,
 } from 'react-native';
-import * as ExpoLinking from 'expo-linking';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -20,14 +18,13 @@ import {
   IconEye,
   IconEyeOff,
   IconArrowLeft,
-  IconMailForward,
 } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { Brand } from '@/constants/brand';
 
 type Mode = 'register' | 'signin';
-type Stage = 'credentials' | 'check_inbox';
+type Stage = 'credentials' | 'otp';
 
 export default function Register() {
   const theme = useTheme();
@@ -38,44 +35,26 @@ export default function Register() {
   const [stage, setStage] = useState<Stage>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resent, setResent] = useState(false);
   const [error, setError] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-
-  const inboxFade = useRef(new Animated.Value(0)).current;
 
   const s = makeStyles(theme);
   const clearError = () => setError('');
-
-  const showInboxStage = () => {
-    setStage('check_inbox');
-    Animated.timing(inboxFade, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
 
   const handleRegister = async () => {
     if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     clearError();
-    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: ExpoLinking.createURL('/') } });
+    const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
     setLoading(false);
     if (err) { setError(err.message); return; }
-    showInboxStage();
-  };
-
-  const handleResend = async () => {
-    setLoading(true);
-    clearError();
-    setResent(false);
-    await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: ExpoLinking.createURL('/') } });
-    setLoading(false);
-    setResent(true);
+    // Supabase auto-sends OTP when Confirm Email is ON
+    setStage('otp');
   };
 
   const handleSignIn = async () => {
@@ -87,60 +66,113 @@ export default function Register() {
       password,
     });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) {
+      if (err.message.toLowerCase().includes('email not confirmed')) {
+        // Resend OTP and let them confirm inline
+        await supabase.auth.resend({ type: 'signup', email: email.trim() });
+        setStage('otp');
+        return;
+      }
+      setError(err.message);
+      return;
+    }
     // _layout.tsx detects session + identity → redirects to app automatically
+  };
+
+  const handleVerify = async () => {
+    if (code.length !== 8) { setError('Enter the 8-digit code from your email.'); return; }
+    setLoading(true);
+    clearError();
+    const { error: err } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code,
+      type: 'signup',
+    });
+    setLoading(false);
+    if (err) { setError('Invalid or expired code. Please try again.'); return; }
+    // Session fires via onAuthStateChange → _layout.tsx handles routing
+  };
+
+  const handleResend = async () => {
+    setCode('');
+    clearError();
+    setCodeSent(false);
+    await supabase.auth.resend({ type: 'signup', email: email.trim() });
+    setCodeSent(true);
   };
 
   const inputBorder = (field: string) =>
     focusedField === field ? theme.borderFocused : theme.border;
 
-  // ── Check inbox stage ─────────────────────────────────────
-  // Supabase sends a confirmation link by default. When the user taps it,
-  // the deep link (almari://) returns them to the app, onAuthStateChange
-  // fires, and _layout.tsx routes them to the welcome screen automatically.
-  // No polling or manual verification needed here.
-  if (stage === 'check_inbox') {
+  // ── OTP stage ─────────────────────────────────────────────
+  if (stage === 'otp') {
     return (
       <SafeAreaView style={s.root}>
-        <Animated.View style={[s.inner, { opacity: inboxFade }]}>
+        <KeyboardAvoidingView
+          style={s.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+            <View style={s.inner}>
 
-          <TouchableOpacity style={s.back} onPress={() => { setStage('credentials'); setResent(false); }}>
-            <IconArrowLeft size={20} color={theme.textSecondary} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={s.back}
+                onPress={() => { setStage('credentials'); setCode(''); clearError(); setCodeSent(false); }}
+              >
+                <IconArrowLeft size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
 
-          <View style={s.inboxIcon}>
-            <IconMailForward size={52} color={theme.accent} strokeWidth={1.25} />
-          </View>
+              <Text style={s.heading}>Check your email</Text>
+              <Text style={s.subheading}>
+                We sent an 8-digit code to{' '}
+                <Text style={{ color: theme.text, fontFamily: 'Inter_500Medium' }}>
+                  {email.trim()}
+                </Text>
+                . Enter it below to verify your account.
+              </Text>
 
-          <Text style={s.heading}>Check your inbox</Text>
-          <Text style={s.subheading}>
-            We sent a confirmation link to{'\n'}
-            <Text style={[s.subheading, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
-              {email.trim()}
-            </Text>
-          </Text>
-          <Text style={s.inboxHint}>
-            Tap the link in the email — it'll bring you straight back here.
-          </Text>
+              {!!error && <Text style={[s.errorText, { marginBottom: 12 }]}>{error}</Text>}
+              {codeSent && !error && (
+                <Text style={[s.successText, { marginBottom: 12 }]}>New code sent.</Text>
+              )}
 
-          <View style={[s.inboxFooter, { marginTop: 32 }]}>
-            {resent
-              ? <Text style={[s.linkText, { color: theme.success }]}>Link resent.</Text>
-              : (
-                <TouchableOpacity onPress={handleResend} disabled={loading}>
-                  <Text style={[s.linkText, { color: theme.accent }]}>
-                    {loading ? 'Sending…' : 'Resend link'}
-                  </Text>
-                </TouchableOpacity>
-              )
-            }
-            <Text style={[s.linkText, { color: theme.textDisabled }]}>·</Text>
-            <TouchableOpacity onPress={() => { setStage('credentials'); setResent(false); clearError(); }}>
-              <Text style={[s.linkText, { color: theme.textSecondary }]}>Wrong email?</Text>
-            </TouchableOpacity>
-          </View>
+              <TextInput
+                style={[s.codeInput, {
+                  color: theme.text,
+                  borderColor: code.length > 0 ? theme.borderFocused : theme.border,
+                  backgroundColor: theme.inputBackground,
+                }]}
+                value={code}
+                onChangeText={v => { setCode(v.replace(/\D/g, '')); clearError(); setCodeSent(false); }}
+                keyboardType="number-pad"
+                maxLength={8}
+                placeholder="00000000"
+                placeholderTextColor={theme.textDisabled}
+                autoFocus
+              />
 
-        </Animated.View>
+              <TouchableOpacity
+                style={[s.btnPrimary, { backgroundColor: theme.accent, marginTop: 20 }]}
+                onPress={handleVerify}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading
+                  ? <ActivityIndicator color={theme.accentText} />
+                  : <Text style={[s.btnPrimaryText, { color: theme.accentText }]}>Confirm</Text>
+                }
+              </TouchableOpacity>
+
+              <TouchableOpacity style={s.linkBtn} onPress={handleResend}>
+                <Text style={[s.linkText, { color: theme.textSecondary }]}>
+                  Didn't receive it? Check your spam folder, or{' '}
+                  <Text style={{ color: theme.accent }}>resend</Text>
+                </Text>
+              </TouchableOpacity>
+
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -270,12 +302,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 16,
     },
 
-    // Inbox stage
-    inboxIcon:   { alignItems: 'center', marginBottom: 24, marginTop: 16 },
-    inboxHint:   { fontFamily: 'Inter_400Regular', fontSize: 14, color: theme.textSecondary, lineHeight: 20, marginTop: 4 },
-    inboxFooter: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 20 },
-
-    // Credentials stage
     fieldGroup: { gap: 12, marginBottom: 8 },
     inputWrap: {
       flexDirection: 'row',
@@ -302,6 +328,12 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       color: theme.error,
       marginBottom: 8,
     },
+    successText: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 13,
+      color: theme.success,
+      marginBottom: 8,
+    },
     btnPrimary: {
       borderRadius: 12,
       paddingVertical: 15,
@@ -314,5 +346,17 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     },
     linkBtn:  { alignItems: 'center', paddingVertical: 14 },
     linkText: { fontFamily: 'Inter_400Regular', fontSize: 14 },
+
+    codeInput: {
+      borderWidth: 1.5,
+      borderRadius: 10,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      fontSize: 28,
+      letterSpacing: 10,
+      textAlign: 'center',
+      fontFamily: 'Inter_600SemiBold',
+      marginTop: 8,
+    },
   });
 }

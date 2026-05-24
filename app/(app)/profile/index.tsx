@@ -159,7 +159,6 @@ export default function Profile() {
   const s = makeStyles(theme);
 
   const { session, identity, profile: cachedProfile, setIdentity } = useAuthStore();
-
   const userId = session?.user.id ?? '';        // auth UID — used for auth operations only
   const identityId = identity?.id ?? '';        // user_identity.id — used for all DB FK references
   const email = session?.user.email ?? '';

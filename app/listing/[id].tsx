@@ -142,19 +142,11 @@ export default function ListingDetail() {
   const isWaitlisted = listing.negotiationActive || listing.waitlistCount > 0
 
   const handleBuyNow = () => {
-    Alert.alert(
-      'Buy now',
-      'Payments are coming soon. Check back shortly.',
-      [{ text: 'OK' }],
-    )
+    Alert.alert('Buy now', 'Payments are coming soon. Check back shortly.', [{ text: 'OK' }])
   }
 
   const handleJoinWaitlist = () => {
-    Alert.alert(
-      'Join waitlist',
-      'Waitlist joining is coming soon.',
-      [{ text: 'OK' }],
-    )
+    Alert.alert('Join waitlist', 'Waitlist joining is coming soon.', [{ text: 'OK' }])
   }
 
   return (
