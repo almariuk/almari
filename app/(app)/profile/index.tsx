@@ -23,6 +23,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store/auth';
+import { useThemeStore, ACCENT_PALETTES } from '@/store/theme';
 import { IconCandleFilled } from '@tabler/icons-react-native';
 import { useTrustTiers, getDiyaColour } from '@/hooks/useTrustTiers';
 import type { UserAddressRow, PayoutRow, TransactionRow, PayoutStatus, TransactionStatus } from '@/types/database';
@@ -346,6 +347,8 @@ export default function Profile() {
     clear();
   };
 
+  const { accentKey, setAccentKey } = useThemeStore();
+
   // ── Render ────────────────────────────────────────────────────
 
   return (
@@ -626,6 +629,33 @@ export default function Profile() {
           )}
         </SectionCard>
 
+        {/* Theme picker */}
+        <SectionCard title="Colour theme">
+          <View style={s.swatchRow}>
+            {ACCENT_PALETTES.map(palette => (
+              <TouchableOpacity
+                key={palette.key}
+                onPress={() => setAccentKey(palette.key)}
+                activeOpacity={0.8}
+                style={s.swatchWrap}
+              >
+                <View style={[
+                  s.swatch,
+                  { backgroundColor: palette.swatch },
+                  accentKey === palette.key && { borderWidth: 3, borderColor: theme.text },
+                ]}>
+                  {accentKey === palette.key && (
+                    <IconCheck size={14} color="#fff" />
+                  )}
+                </View>
+                <Text style={[s.swatchLabel, { color: accentKey === palette.key ? theme.text : theme.textSecondary }]}>
+                  {palette.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </SectionCard>
+
         {/* Sign out */}
         <TouchableOpacity style={[s.signOutBtn, { borderColor: theme.border }]} onPress={signOut} activeOpacity={0.7}>
           <Text style={[s.signOutText, { color: theme.error }]}>Sign out</Text>
@@ -692,6 +722,11 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     historyStatus:{ fontFamily: 'Inter_500Medium', fontSize: 12 },
 
     emptyNote:  { fontFamily: 'Inter_400Regular', fontSize: 13, fontStyle: 'italic', paddingVertical: 4 },
+
+    swatchRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 4 },
+    swatchWrap:  { alignItems: 'center', gap: 6 },
+    swatch:      { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    swatchLabel: { fontFamily: 'Inter_400Regular', fontSize: 11 },
 
     signOutBtn:  { borderWidth: 1.5, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
     signOutText: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
