@@ -208,7 +208,106 @@ Every listing always shows seller tier visually — individual, community store,
 
 ---
 
-## Database Tables — Backlog Schema
+## Priority 7 — Founder Dashboard and Reporting
+
+Internal tooling for the founder to monitor marketplace health, take action, and stay compliant. Build incrementally — SQL queries first, Edge Function digest second, admin UI third.
+
+### Build sequence
+
+**Now — saved Supabase queries (no code needed)**
+Run manually. The four numbers that matter at launch: active users, GMV, listings live, open concerns.
+
+**After 100 users — weekly email digest**
+Scheduled Edge Function. Runs Monday morning. Sends plain-text report to founder email. All the numbers below, no dashboard required.
+
+**After stores launch — admin UI**
+Subscription status and seller-type enforcement need daily visibility. Build a simple internal web screen at that point.
+
+---
+
+### Performance reports
+
+**Marketplace health — weekly**
+- GMV — total value of completed transactions
+- Transaction count and average order value by category
+- Listing-to-sale conversion rate and average days to sale
+- Active sellers vs dormant (no sale in 30 / 60 / 90 days)
+- Active buyers vs one-time buyers — repeat purchase rate
+
+**Supply quality — weekly**
+- New listings published vs drafts abandoned (completion rate)
+- Listings removed by seller vs removed by Almari
+- Average photos per listing, average condition rating
+- Search terms with zero results — demand signal for what's missing
+
+**Growth — monthly**
+- New users by week cohort
+- D7, D30, D90 retention by cohort
+- Referral source where trackable
+
+---
+
+### Trust and safety reports
+
+**Trust health — weekly**
+- Seller distribution across diya tiers
+- Trust score movements: upgrades and downgrades that week
+- Concerns raised: total, upheld, dismissed, pending
+- Sellers suspended or removed and reason
+
+**Concern outcomes — monthly**
+- Average resolution time
+- Upheld rate by concern type (not as described, no dispatch, etc.)
+- Repeat offenders — sellers with more than one concern
+
+---
+
+### Compliance reports
+
+**GDPR — monthly**
+- Delete account requests received and completed within 30 days (legal requirement)
+- Data subject access requests received and completed
+- Any data incidents or breaches — immediate escalation trigger
+
+**Seller compliance — monthly (critical once stores launch)**
+- Individuals whose listing volume suggests trading activity
+- Community stores approaching listing cap
+- Verified traders with lapsed subscription still listing — must auto-suspend
+
+**ICO — quarterly**
+- Registration current and paid
+- Any regulatory contact received
+
+---
+
+### Financial reports
+
+**Revenue — monthly**
+- Postage margin collected by postage class
+- Store subscription MRR — community stores, verified traders, heritage artisans separately
+- Subscriptions churned that month
+- Outstanding escrow — value held and age of oldest open transaction
+
+**Payout reconciliation — monthly**
+- Total paid out to sellers
+- Failed payouts and resolution status
+- Stripe fees
+
+---
+
+### Operational / actions reports
+
+**Open cases — weekly**
+- Concerns awaiting founder decision
+- Lost in post cases open and their age
+- Verified trader and heritage artisan applications pending review
+- Community store upgrade applications pending review
+
+**Seller applications — monthly**
+- Applications received vs approved vs declined
+- Average time from application to decision
+
+---
 
 | Table | Purpose | Depends on |
 |---|---|---|
