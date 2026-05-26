@@ -140,7 +140,7 @@ export default function MyListings() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
-              onPress={() => router.push(`/listing/${item.id}` as any)}
+              onPress={() => router.push((tab === 'active' ? `/list/edit/${item.id}` : `/listing/${item.id}`) as any)}
               activeOpacity={0.8}
             >
               <View style={[s.photoWrap, { backgroundColor: theme.surfaceRaised }]}>

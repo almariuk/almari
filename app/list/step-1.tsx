@@ -623,7 +623,7 @@ export default function ListStep1() {
                   onPress={() => draft.setWhySellingCopyId(selected ? null : phrase.id)}
                   activeOpacity={0.85}
                 >
-                  <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text, fontFamily: 'CormorantGaramond_400Regular_Italic' }]}>
+                  <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text }]}>
                     {phrase.display_text}
                   </Text>
                 </TouchableOpacity>

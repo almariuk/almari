@@ -6,7 +6,6 @@ import { IconCandleFilled } from '@tabler/icons-react-native'
 import { useTheme } from '@/hooks/useTheme'
 import { useTrustTiers, getDiyaColour, getMaxTrustScore } from '@/hooks/useTrustTiers'
 import FireworkTrust from '@/components/brand/FireworkTrust'
-import { cdnUrl } from '@/utils/image'
 import type { FeedItem, FitLabel } from '@/types/feed'
 import type { Theme } from '@/constants/theme'
 
@@ -45,7 +44,6 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   const photoHeight = Math.round(cardWidth * 1.28)
 
-  const photoUri = cdnUrl(data.primaryPhotoUrl, 400, 75)
   const price =
     data.askingPricePence != null
       ? `£${Math.round(data.askingPricePence / 100)}`
@@ -61,7 +59,7 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
       {/* Photo */}
       <View>
         <Image
-          source={photoUri ? { uri: photoUri } : null}
+          source={data.primaryPhotoUrl ? { uri: data.primaryPhotoUrl } : null}
           style={[s.photo, { width: cardWidth, height: photoHeight, backgroundColor: theme.surface }]}
           contentFit="cover"
           transition={250}
