@@ -1,6 +1,6 @@
 import { Alert, View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { IconCandleFilled } from '@tabler/icons-react-native'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -82,8 +82,9 @@ function formatGbp(pence: number): string {
 
 export default function ListingDetail() {
   const theme = useTheme()
+  const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { profile } = useAuthStore()
+  const { profile, identity } = useAuthStore()
   const { data: listing, isLoading, error } = useListingDetail(id ?? '')
   const { data: tiers = [] } = useTrustTiers()
 
@@ -140,6 +141,8 @@ export default function ListingDetail() {
 
   // Waitlist state
   const isWaitlisted = listing.negotiationActive || listing.waitlistCount > 0
+
+  const isSeller = !!identity?.id && identity.id === listing.sellerId
 
   const handleBuyNow = () => {
     Alert.alert('Buy now', 'Payments are coming soon. Check back shortly.', [{ text: 'OK' }])
@@ -323,42 +326,56 @@ export default function ListingDetail() {
 
       {/* Bottom price + action bar */}
       <View style={[s.bottomBar, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-        <View style={s.priceBlock}>
-          <View style={s.priceRow}>
-            <Text style={[s.priceItem, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
-              {formatGbp(itemPrice)}
-            </Text>
-            {postagePrice > 0 && (
-              <Text style={[s.postageText, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                {'  +  '}{formatGbp(postagePrice)} postage
-              </Text>
-            )}
-          </View>
-          <Text style={[s.totalText, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
-            Total {formatGbp(totalPrice)}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            s.buyBtn,
-            { backgroundColor: isWaitlisted ? theme.surface : theme.accent },
-          ]}
-          onPress={isWaitlisted ? handleJoinWaitlist : handleBuyNow}
-          activeOpacity={0.85}
-        >
-          <Text
-            style={[
-              s.buyBtnText,
-              {
-                color: isWaitlisted ? theme.accent : theme.accentText,
-                fontFamily: 'Inter_600SemiBold',
-              },
-            ]}
+        {isSeller ? (
+          <TouchableOpacity
+            style={[s.buyBtn, s.editBtn, { backgroundColor: theme.surface, borderColor: theme.accent }]}
+            onPress={() => router.push(`/list/edit/${listing.id}` as any)}
+            activeOpacity={0.85}
           >
-            {isWaitlisted ? 'Join waitlist' : 'Buy now'}
-          </Text>
-        </TouchableOpacity>
+            <Text style={[s.buyBtnText, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>
+              Edit listing
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <View style={s.priceBlock}>
+              <View style={s.priceRow}>
+                <Text style={[s.priceItem, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+                  {formatGbp(itemPrice)}
+                </Text>
+                {postagePrice > 0 && (
+                  <Text style={[s.postageText, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+                    {'  +  '}{formatGbp(postagePrice)} postage
+                  </Text>
+                )}
+              </View>
+              <Text style={[s.totalText, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
+                Total {formatGbp(totalPrice)}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                s.buyBtn,
+                { backgroundColor: isWaitlisted ? theme.surface : theme.accent },
+              ]}
+              onPress={isWaitlisted ? handleJoinWaitlist : handleBuyNow}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={[
+                  s.buyBtnText,
+                  {
+                    color: isWaitlisted ? theme.accent : theme.accentText,
+                    fontFamily: 'Inter_600SemiBold',
+                  },
+                ]}
+              >
+                {isWaitlisted ? 'Join waitlist' : 'Buy now'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   )
@@ -440,6 +457,11 @@ const s = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 24,
     paddingVertical: 13,
+  },
+  editBtn: {
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: 1.5,
   },
   buyBtnText: { fontSize: 15 },
 })

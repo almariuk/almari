@@ -25,8 +25,9 @@ export function useListingDetail(id: string) {
           fabric_types ( display_name ),
           item_care_status ( display_text, detail_text ),
           why_selling_copy:micro_copy!why_selling_copy_id ( display_text ),
+          seller_id,
           seller:user_identity!seller_id (
-            first_name, last_name_initial,
+            id, first_name, last_name_initial,
             user_profile ( trust_score_cached )
           ),
           listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size ),
@@ -60,6 +61,7 @@ export function useListingDetail(id: string) {
 
       return {
         id: row.id,
+        sellerId: row.seller_id ?? null,
         status: row.status as ListingStatus,
         negotiationActive: row.negotiation_active ?? false,
         waitlistCount: row.waitlist_count ?? 0,
