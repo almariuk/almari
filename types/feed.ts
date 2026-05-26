@@ -39,6 +39,7 @@ export interface FeedItem extends ListingCardData {
 export interface FeedFilters {
   categoryId?: number
   subcategoryId?: number
+  subcategoryIds?: number[]
   occasionBucketId?: number
   colourId?: number
   conditionId?: number

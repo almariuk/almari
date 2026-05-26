@@ -43,7 +43,11 @@ export function useFeedListings(filters: FeedFilters = {}) {
         .range(offset, offset + PAGE_SIZE - 1)
 
       if (filters.categoryId != null) query = query.eq('category_id', filters.categoryId)
-      if (filters.subcategoryId != null) query = query.eq('subcategory_id', filters.subcategoryId)
+      if (filters.subcategoryIds != null && filters.subcategoryIds.length > 0) {
+        query = query.in('subcategory_id', filters.subcategoryIds)
+      } else if (filters.subcategoryId != null) {
+        query = query.eq('subcategory_id', filters.subcategoryId)
+      }
       if (filters.occasionBucketId != null) query = query.eq('occasion_bucket_id', filters.occasionBucketId)
       if (filters.colourId != null) query = query.eq('colour_id', filters.colourId)
       if (filters.conditionId != null) query = query.eq('condition_id', filters.conditionId)

@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Brand } from '@/constants/brand';
+import { MeasurementsForm, type MeasurementValues } from '@/components/profile/MeasurementsForm';
 import type { UserIdentity, UserProfile } from '@/types/database';
 
 export default function Welcome() {
@@ -24,11 +25,7 @@ export default function Welcome() {
 
   const [firstName, setFirstName] = useState('');
   const [lastInitial, setLastInitial] = useState('');
-  const [bust, setBust] = useState('');
-  const [waist, setWaist] = useState('');
-  const [hips, setHips] = useState('');
-  const [height, setHeight] = useState('');
-  const [shoeSize, setShoeSize] = useState('');
+  const [measurements, setMeasurements] = useState<MeasurementValues>({ bust: '', waist: '', hips: '', height: '', shoeSize: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -36,7 +33,7 @@ export default function Welcome() {
   const s = makeStyles(theme);
   const canSubmit = firstName.trim().length > 0 && lastInitial.trim().length > 0;
 
-  const hasMeasurements = !!(bust || waist || hips || height || shoeSize);
+  const hasMeasurements = !!(measurements.bust || measurements.waist || measurements.hips || measurements.height || measurements.shoeSize);
 
   const inputBorder = (field: string) =>
     focusedField === field ? theme.borderFocused : theme.border;
@@ -69,11 +66,11 @@ export default function Welcome() {
         .insert({
           user_id: typedIdentity.id,
           ...(skipMeasurements ? {} : {
-            bust_cm:      bust   ? parseInt(bust,   10) : null,
-            waist_cm:     waist  ? parseInt(waist,  10) : null,
-            hips_cm:      hips   ? parseInt(hips,   10) : null,
-            height_cm:    height ? parseInt(height, 10) : null,
-            uk_shoe_size: shoeSize ? parseFloat(shoeSize) : null,
+            bust_cm:      measurements.bust      ? parseInt(measurements.bust,      10) : null,
+            waist_cm:     measurements.waist     ? parseInt(measurements.waist,     10) : null,
+            hips_cm:      measurements.hips      ? parseInt(measurements.hips,      10) : null,
+            height_cm:    measurements.height    ? parseInt(measurements.height,    10) : null,
+            uk_shoe_size: measurements.shoeSize  ? parseFloat(measurements.shoeSize)   : null,
           }),
         })
         .select()
@@ -188,48 +185,12 @@ export default function Welcome() {
                 We sort listings by fit for you. Only you can see these.
               </Text>
 
-              <View style={s.measureGrid}>
-                {[
-                  { key: 'bust',   label: 'Bust cm',    value: bust,     set: setBust },
-                  { key: 'waist',  label: 'Waist cm',   value: waist,    set: setWaist },
-                  { key: 'hips',   label: 'Hips cm',    value: hips,     set: setHips },
-                  { key: 'height', label: 'Height cm',  value: height,   set: setHeight },
-                ].map(({ key, label, value, set }) => (
-                  <View key={key} style={s.measureCell}>
-                    <Text style={s.measureLabel}>{label}</Text>
-                    <TextInput
-                      style={[s.measureInput, {
-                        borderColor: inputBorder(key),
-                        backgroundColor: theme.inputBackground,
-                        color: theme.text,
-                      }]}
-                      value={value}
-                      onChangeText={set}
-                      keyboardType="number-pad"
-                      placeholder="—"
-                      placeholderTextColor={theme.textDisabled}
-                      onFocus={() => setFocusedField(key)}
-                      onBlur={() => setFocusedField(null)}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              <View style={s.shoeRow}>
-                <Text style={s.measureLabel}>UK shoe size</Text>
-                <View style={[s.inputWrap, s.shoeInput, { borderColor: inputBorder('shoe'), backgroundColor: theme.inputBackground }]}>
-                  <TextInput
-                    style={[s.input, { color: theme.text }]}
-                    value={shoeSize}
-                    onChangeText={setShoeSize}
-                    keyboardType="decimal-pad"
-                    placeholder="e.g. 6.5"
-                    placeholderTextColor={theme.textDisabled}
-                    onFocus={() => setFocusedField('shoe')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-              </View>
+              <MeasurementsForm
+                values={measurements}
+                onChange={setMeasurements}
+                focusedField={focusedField}
+                onFocusField={setFocusedField}
+              />
             </View>
 
             {!!error && <Text style={s.errorText}>{error}</Text>}
@@ -345,31 +306,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontFamily: 'Inter_400Regular',
       fontSize: 15,
     },
-
-    measureGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-      marginBottom: 12,
-    },
-    measureCell: { width: '47%' },
-    measureLabel: {
-      fontFamily: 'Inter_400Regular',
-      fontSize: 12,
-      color: theme.textSecondary,
-      marginBottom: 4,
-    },
-    measureInput: {
-      borderWidth: 1.5,
-      borderRadius: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontFamily: 'Inter_400Regular',
-      fontSize: 15,
-    },
-
-    shoeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    shoeInput: { flex: 1 },
 
     errorText: {
       fontFamily: 'Inter_400Regular',

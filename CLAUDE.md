@@ -147,13 +147,13 @@ When a new feature or change is requested, reason about the full system impact f
 | S2 — Onboarding (name, measurements) | `app/(auth)/welcome.tsx` | Done |
 | S3 — Auth (register/sign-in + OTP) | `app/(auth)/register.tsx` | Done |
 | S4 — Home feed | `app/(app)/index.tsx` | Done |
-| S5 — Search | `app/(app)/search.tsx` | **Stub — next to build** |
+| S5 — Search | `app/(app)/search.tsx` | Done (text search + category/subcategory/occasion/colour/condition/pattern/work/fabric/budget/fits-me filters) |
 | S6 — Listing detail | `app/listing/[id].tsx` | Done |
 | S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
 | S11 — Profile | `app/(app)/profile/index.tsx` | Done |
-| S21 — Measurements | `app/(app)/profile/measurements.tsx` | **Not built** — extract form from `welcome.tsx` into `components/profile/MeasurementsForm.tsx`, reuse in both |
+| S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
+| My listings | `app/(app)/profile/my-listings.tsx` | Done |
 | Transaction screens | `app/transaction/[id]/*` | Stubs |
-| My listings | `app/(app)/profile/my-listings.tsx` | Stub |
 | Bank details | `app/(app)/profile/bank-details.tsx` | Stub |
 
 ### Key components
