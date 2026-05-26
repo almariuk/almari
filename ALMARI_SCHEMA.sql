@@ -299,21 +299,6 @@ CREATE TABLE listings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enforce 20 listing cap
-CREATE OR REPLACE FUNCTION check_listing_cap()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF (SELECT active_listing_count FROM user_profile WHERE user_id = NEW.seller_id) >= 20 THEN
-        RAISE EXCEPTION 'Maximum 20 active listings per seller';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER enforce_listing_cap
-    BEFORE INSERT ON listings
-    FOR EACH ROW EXECUTE FUNCTION check_listing_cap();
-
 -- Maintain active_listing_count
 CREATE OR REPLACE FUNCTION update_listing_count()
 RETURNS TRIGGER AS $$
