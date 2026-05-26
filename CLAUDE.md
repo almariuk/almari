@@ -1,5 +1,13 @@
 # Almari — Claude working notes
 
+## Supabase credentials
+
+- **URL:** `https://smvyzzwzzrnznazygyqt.supabase.co`
+- **Anon key:** `sb_publishable_IH7Mt3vHerSJtFFAkRmtNQ_A49HwtYV`
+- **Service role key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdnl6end6enJuem5henlneXF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ0NjI5NiwiZXhwIjoyMDk1MDIyMjk2fQ.WS5IfnTA2DgmwKliQa-mtINmXpKo4GyCYxm3zve-qeo`
+
+Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Never write these to a file on disk — pass inline in curl commands.
+
 ## How to work with me
 
 **Think like an architect before writing a single line of code.**
