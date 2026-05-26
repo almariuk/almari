@@ -21,6 +21,7 @@ import type {
   ConditionTierRow,
   FabricTypeRow,
   ItemCareStatusRow,
+  MicroCopyRow,
   OccasionBucketRow,
   PatternRow,
   SellerMotivationTypeRow,
@@ -183,6 +184,20 @@ export default function ListStep1() {
         .eq('is_active', true)
         .order('display_order');
       return (data ?? []) as SellerMotivationTypeRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: whySellingPhrases = [] } = useQuery<MicroCopyRow[]>({
+    queryKey: ['micro_copy_why_selling'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('micro_copy')
+        .select('*')
+        .eq('context', 'why_selling')
+        .eq('is_active', true)
+        .order('display_order');
+      return (data ?? []) as MicroCopyRow[];
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -585,15 +600,47 @@ export default function ListStep1() {
           </View>
         )}
 
-        {/* ── Why selling ────────────────────────────────────────── */}
-        {motivations.length > 0 && (
+        {/* ── Why selling (public phrase — shown on listing) ─────── */}
+        {whySellingPhrases.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>
               Why are you selling?{' '}
               <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
             </Text>
             <Text style={[s.hint, { color: theme.textDisabled }]}>
-              Only visible to you. Helps us suggest the right price.
+              Shown on your listing. Pick the phrase that feels right.
+            </Text>
+            {whySellingPhrases.map((phrase) => {
+              const selected = draft.whySellingCopyId === phrase.id;
+              return (
+                <TouchableOpacity
+                  key={phrase.id}
+                  style={[
+                    s.card,
+                    { borderColor: selected ? theme.accent : theme.border },
+                    selected && { backgroundColor: theme.accentSubtle },
+                  ]}
+                  onPress={() => draft.setWhySellingCopyId(selected ? null : phrase.id)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text, fontFamily: 'CormorantGaramond_400Regular_Italic' }]}>
+                    {phrase.display_text}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── Private motivation (never shown publicly) ──────────── */}
+        {motivations.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>
+              Your reason for selling{' '}
+              <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
+            </Text>
+            <Text style={[s.hint, { color: theme.textDisabled }]}>
+              Only you can see this. Helps us suggest the right price.
             </Text>
             {motivations.map((mot) => {
               const selected = draft.motivationTypeId === mot.id;

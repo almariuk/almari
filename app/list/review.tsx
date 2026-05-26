@@ -302,6 +302,7 @@ export default function ListReview() {
           work_type_id: draft.workTypeId,
           fabric_type_id: draft.fabricTypeId,
           care_status_id: draft.careStatusId,
+          why_selling_copy_id: draft.whySellingCopyId,
           seller_motivation_type_id: draft.motivationTypeId,
           set_contents: draft.whatIsIncluded.trim() || null,
           set_complete: draft.isSetComplete,
