@@ -153,6 +153,61 @@ Requires negotiation engine first.
 
 ---
 
+## Priority 6 — Almari Stores
+
+Almari evolves beyond peer-to-peer preloved into a full community marketplace ecosystem. Three tiers of seller, clearly distinguished visually at all times. Community trust is the gate to every tier.
+
+### Tier 1 — Community individual
+Current model. Personal wardrobe. 20 listing cap. Diya trust visual. Free.
+
+### Tier 2 — Community store
+Earned through trust. Bharosa diya or above required. Minimum 20 completed transactions. Zero upheld concerns. Clean removal score.
+
+- Elevated listing cap — 50 items
+- Persistent store profile page with name, story, speciality, location
+- Small monthly subscription — £5–10/month
+- Still personal wardrobe and personal network only. Not commercial stock.
+
+### Tier 3 — Verified trader
+Application based. Almari vets and approves. Small boutiques, home importers, community traders who currently have no credible online home. Leicester Golden Mile, Southall Broadway, Birmingham traders specifically.
+
+- Higher listing cap — 200 items
+- Full store profile
+- Monthly subscription £50–100
+- Clearly badged as trader at all times. Never appears as individual seller.
+
+### Tier 4 — Heritage artisan
+Direct from maker in India. Handloom weavers, embroidery artisans, craft communities. Authenticated by Almari. Provenance guaranteed.
+
+- Monthly subscription £30
+- Separate discovery section
+- Cultural education content attached to each artisan profile
+
+### The non-negotiable rule
+Every listing always shows seller tier visually — individual, community store, verified trader, heritage artisan. Buyer always knows exactly what they are buying from. The preloved community section is sacred and never contaminated by commercial listings appearing alongside individual sellers without clear visual distinction.
+
+### Database changes needed
+- `seller_type` column on `user_profile` — `individual` | `community_store` | `verified_trader` | `heritage_artisan`
+- `listing_cap` column on `user_profile` — replaces hardcoded 20-cap trigger
+- `store_profile` table — name, story, speciality, location, social links, approved_at
+- `store_subscriptions` table — seller_id, tier, stripe_subscription_id, status, started_at, ends_at
+
+### Revenue from stores
+| Tier | Price | Target (year 3) | Annual revenue |
+|---|---|---|---|
+| Community stores | £5–10/month | 500 stores | £30,000–60,000 |
+| Verified traders | £50–100/month | 200 traders | £120,000–240,000 |
+| Heritage artisans | £30/month | 100 artisans | £36,000 |
+| **Total** | | | **£186,000–336,000** |
+
+### Depends on
+- Stripe subscription billing — recurring payments, not one-time
+- Trust tier system fully operational
+- Minimum 1,000 active community members before opening store applications
+- Manual vetting process for verified traders and heritage artisans initially
+
+---
+
 ## Database Tables — Backlog Schema
 
 | Table | Purpose | Depends on |
@@ -165,4 +220,6 @@ Requires negotiation engine first.
 | social_content_templates | Instagram, WhatsApp, Facebook templates | listings |
 | social_content_generated | Generated assets per listing | social_content_templates |
 | listing_search_trends | Computed weekly from search_events | search_events (volume needed) |
+| store_profile | Store name, story, speciality, location, approval | user_profile (seller_type) |
+| store_subscriptions | Tier, Stripe subscription, status | store_profile, Stripe billing |
 
