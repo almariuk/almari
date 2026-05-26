@@ -78,6 +78,10 @@ CREATE TABLE user_measurement_profiles (
 
 **Fits Me kids labels:** Fits now / Nearly there / Different size. Not "Quick pin / Quick stitch" (adult tailoring concepts).
 
+**Listing free text:** Keep `additional_notes` as free text — it's the escape valve for colour nuance, fabric detail, alterations. Add hint placeholder: *"Colour not quite right? Describe the fabric or embroidery detail. Any alterations? Worn for a specific occasion?"*. 500 character limit. No profanity filter at launch — revisit at scale. Heirloom story stays as free prose (already gated behind isHeirloom toggle).
+
+**Fees:** Zero at launch — no transaction fee, no buyer protection fee. Attracts both sides of the marketplace. Introduce fees once liquidity is established. Promoted listings / subscriptions to be processed via web (Stripe) not in-app, to avoid Apple's 30% cut.
+
 **Image optimisation:** Supabase CDN render endpoint — `/render/image/public/` with `?width=X&quality=Y`. Feed cards: 400px/75. Detail carousel: 800px/85.
 
 ---
