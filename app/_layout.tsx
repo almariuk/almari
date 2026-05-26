@@ -57,7 +57,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     const loadUserData = async (userId: string) => {
-      const { data: identityRow } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: identityRow } = await (supabase as any)
         .from('user_identity')
         .select('*')
         .eq('auth_id', userId)
@@ -65,7 +66,8 @@ export default function RootLayout() {
       setIdentity(identityRow ?? null);
 
       if (identityRow) {
-        const { data: profileRow } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profileRow } = await (supabase as any)
           .from('user_profile')
           .select('*')
           .eq('user_id', identityRow.id)

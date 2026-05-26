@@ -211,7 +211,8 @@ export default function Profile() {
   const saveName = async () => {
     if (!identity) return;
     setSavingName(true);
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('user_identity')
       .update({ first_name: editFirstName.trim(), last_name_initial: editLastInitial.trim().charAt(0).toUpperCase() })
       .eq('id', identity.id)
@@ -242,7 +243,8 @@ export default function Profile() {
     if (!addrLine1.trim() || !addrCity.trim() || !addrPostcode.trim()) return;
     setSavingAddr(true);
     const isFirst = (addressQuery.data ?? []).length === 0;
-    await supabase.from('user_addresses').insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('user_addresses').insert({
       user_id: identityId,
       address_line_1: addrLine1.trim(),
       address_line_2: addrLine2.trim() || null,
@@ -260,7 +262,8 @@ export default function Profile() {
     // Clear all defaults then set new one
     await Promise.all(
       addresses.map((a: UserAddressRow) =>
-        supabase.from('user_addresses').update({ is_default: a.id === addrId }).eq('id', a.id),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from('user_addresses').update({ is_default: a.id === addrId }).eq('id', a.id),
       ),
     );
     qc.invalidateQueries({ queryKey: ['user_addresses', identityId] });
