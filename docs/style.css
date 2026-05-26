@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #1B1532;
+  --gold:   #DDB86C;
+  --bg:     #F7F4F9;
+  --surface:#FFFFFF;
+  --text:   #1B1532;
+  --muted:  #6B7280;
+  --border: #E5E0EE;
+  --max:    740px;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Site header ── */
+.site-header {
+  background: var(--navy);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.site-header .wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--gold);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.site-header nav a {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  margin-left: 24px;
+  transition: color 0.15s;
+}
+
+.site-header nav a:hover { color: var(--gold); }
+
+/* ── Hero ── */
+.hero {
+  background: var(--navy);
+  padding: 80px 24px 88px;
+  text-align: center;
+}
+
+.hero-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.hero-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 20px;
+}
+
+.hero-sub {
+  font-size: 0.9375rem;
+  color: rgba(255,255,255,0.55);
+  max-width: 480px;
+  margin: 0 auto 40px;
+}
+
+.app-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(221,184,108,0.3);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.8125rem;
+  padding: 10px 22px;
+  border-radius: 24px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Content sections ── */
+.section {
+  padding: 64px 24px;
+}
+
+.section--alt { background: var(--surface); }
+
+.section-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.section-body {
+  font-size: 1rem;
+  color: var(--muted);
+  max-width: 600px;
+  margin-bottom: 40px;
+}
+
+/* pillars grid */
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.pillar {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+}
+
+.pillar-icon {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.pillar h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.pillar p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Footer ── */
+.site-footer {
+  background: var(--navy);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.site-footer .wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+  margin-bottom: 24px;
+}
+
+.footer-links a {
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  transition: color 0.15s;
+}
+
+.footer-links a:hover { color: var(--gold); }
+
+.footer-copy {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.3);
+}
+
+/* ── Legal pages ── */
+.legal-hero {
+  background: var(--navy);
+  padding: 48px 24px 52px;
+  text-align: center;
+}
+
+.legal-hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.legal-hero .meta {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.45);
+}
+
+.legal-body {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.legal-body h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 40px 0 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.legal-body h2:first-child { border-top: none; margin-top: 0; }
+
+.legal-body h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 24px 0 8px;
+}
+
+.legal-body p {
+  font-size: 0.9375rem;
+  color: #374151;
+  margin-bottom: 14px;
+  line-height: 1.75;
+}
+
+.legal-body strong { color: var(--navy); font-weight: 600; }
+
+.legal-body ul, .legal-body ol {
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.legal-body li {
+  font-size: 0.9375rem;
+  color: #374151;
+  margin-bottom: 6px;
+  line-height: 1.7;
+}
+
+.legal-body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 32px 0;
+}
+
+.legal-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin: 16px 0 24px;
+}
+
+.legal-body th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg);
+  color: var(--navy);
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.legal-body td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  color: #374151;
+  vertical-align: top;
+}
+
+.legal-body .em {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* prose page (values) */
+.prose h2 {
+  border-top: none;
+  margin-top: 40px;
+}
+
+.prose .lead {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  color: #374151;
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .site-header nav { display: none; }
+  .pillars { grid-template-columns: 1fr; }
+  .legal-body table { font-size: 0.8125rem; }
+  .legal-body th, .legal-body td { padding: 8px 10px; }
+}
