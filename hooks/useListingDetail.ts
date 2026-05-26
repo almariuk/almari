@@ -51,9 +51,8 @@ export function useListingDetail(id: string) {
       const sellerProfile = Array.isArray(seller?.user_profile)
         ? seller.user_profile[0]
         : seller?.user_profile
-      const trustScores: any[] = Array.isArray(row.listing_trust_scores)
-        ? row.listing_trust_scores
-        : []
+      const tsRaw = row.listing_trust_scores
+      const tsRow = Array.isArray(tsRaw) ? tsRaw[0] : tsRaw
       const mRaw = row.listing_measurements
       const mRow = Array.isArray(mRaw) ? mRaw[0] : mRaw
       const pRaw = row.provenance
@@ -90,7 +89,7 @@ export function useListingDetail(id: string) {
           ? `${seller.first_name} ${seller.last_name_initial}.`
           : 'Seller',
         sellerTrustScore: sellerProfile?.trust_score_cached ?? 0,
-        listingTrustScore: trustScores[0]?.total_score ?? 0,
+        listingTrustScore: tsRow?.total_score ?? 0,
         measurements: mRow
           ? {
               bustCm: mRow.bust_cm ?? null,

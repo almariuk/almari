@@ -67,9 +67,10 @@ export function useFeedListings(filters: FeedFilters = {}) {
         const seller = row.seller
         const sellerProfile: any[] = Array.isArray(seller?.user_profile) ? seller.user_profile : []
 
-        const trustScores: any[] = Array.isArray(row.listing_trust_scores) ? row.listing_trust_scores : []
+        // Both have UNIQUE on listing_id; PostgREST returns object not array
+        const tsRaw = row.listing_trust_scores
+        const tsRow = Array.isArray(tsRaw) ? tsRaw[0] : tsRaw
 
-        // listing_measurements has UNIQUE on listing_id; PostgREST may return array or object
         const mRaw = row.listing_measurements
         const mRow = Array.isArray(mRaw) ? mRaw[0] : mRaw
 
@@ -80,7 +81,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
             ? `${seller.first_name} ${seller.last_name_initial}.`
             : 'Seller',
           sellerTrustScore: sellerProfile[0]?.trust_score_cached ?? 0,
-          listingTrustScore: trustScores[0]?.total_score ?? 0,
+          listingTrustScore: tsRow?.total_score ?? 0,
           subcategoryName: row.subcategories?.name ?? '',
           occasionDisplayName: row.occasion_buckets?.display_name ?? null,
           conditionDisplayText: row.condition_tiers?.display_text ?? '',

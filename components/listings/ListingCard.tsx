@@ -4,7 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { Image } from 'expo-image'
 import { IconCandleFilled } from '@tabler/icons-react-native'
 import { useTheme } from '@/hooks/useTheme'
-import { useTrustTiers, getDiyaColour, getMaxTrustScore } from '@/hooks/useTrustTiers'
+import { useTrustTiers, getDiyaColour } from '@/hooks/useTrustTiers'
 import FireworkTrust from '@/components/brand/FireworkTrust'
 import type { FeedItem, FitLabel } from '@/types/feed'
 import type { Theme } from '@/constants/theme'
@@ -38,7 +38,6 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
   const theme = useTheme()
   const { data: tiers = [] } = useTrustTiers()
   const diyaColour = getDiyaColour(data.sellerTrustScore, tiers)
-  const maxTrustScore = getMaxTrustScore(tiers)
 
   const scale = useSharedValue(1)
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
@@ -110,7 +109,7 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           >
             {'  '}{data.sellerName}
           </Text>
-          <FireworkTrust score={data.listingTrustScore} maxScore={maxTrustScore} size={72} />
+          <FireworkTrust score={data.listingTrustScore} maxScore={62} size={36} />
         </View>
 
         {/* Why selling — the human touch */}
