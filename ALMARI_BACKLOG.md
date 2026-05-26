@@ -21,6 +21,18 @@ ALTER TABLE transactions ADD COLUMN cancellation_reason TEXT
 
 ---
 
+## GDPR compliance (build before App Store submission)
+
+### Delete account
+GDPR right to erasure. User can delete their account from profile settings.
+- Anonymise `user_identity` (name → "Deleted User", email → null)
+- Delete `user_profile` measurements
+- Keep `listings` and `transactions` records intact (needed for other party's history and provenance chain) but detach from user
+- Supabase auth user deleted via `supabase.auth.admin.deleteUser()`
+- Add to profile screen under a "Danger zone" section
+
+---
+
 ## Priority 1 — Add after first 50 users
 
 ### Make an Offer + Negotiation Engine

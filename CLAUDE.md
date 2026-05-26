@@ -25,6 +25,13 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 - [ ] P4: EAS build iOS → TestFlight internal track
 - [ ] P5: EAS build Android → Play Store internal testing track
 
+### Founder actions (not code)
+- [ ] ICO registration — £40/year at ico.org.uk. Legal requirement from day one of processing personal data commercially. Deferred until first revenue but noted as compliance debt.
+- [ ] Privacy Policy — use Termly, customise data collection section to mention measurements, listing photos, provenance data. Host at almari.uk/privacy.
+- [ ] T&Cs — founder-written based on PRD. All sales final, C2C platform, no consumer return rights, lost in post process. Host at almari.uk/terms. Solicitor review when first revenue arrives.
+- [ ] Apple Developer account — $99/year. Required for TestFlight and App Store submission.
+- [ ] Google Play Developer account — $25 one-time. Required for Play Store.
+
 ### Phase 2 — Social sign-in
 - [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
 - [ ] A2: Google Sign-In — `@react-native-google-signin/google-signin` + Supabase Google provider
