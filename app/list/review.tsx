@@ -289,7 +289,8 @@ export default function ListReview() {
       );
 
       // 2. Insert listing row
-      const { data: listing, error: listingError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: listing, error: listingError } = await (supabase as any)
         .from('listings')
         .insert({
           seller_id: sellerId,
@@ -302,6 +303,7 @@ export default function ListReview() {
           work_type_id: draft.workTypeId,
           fabric_type_id: draft.fabricTypeId,
           care_status_id: draft.careStatusId,
+          why_selling_copy_id: draft.whySellingCopyId,
           seller_motivation_type_id: draft.motivationTypeId,
           set_contents: draft.whatIsIncluded.trim() || null,
           set_complete: draft.isSetComplete,
@@ -321,7 +323,8 @@ export default function ListReview() {
       const listingId = listing.id;
 
       // 3. Insert listing_photos
-      await supabase.from('listing_photos').insert(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listing_photos').insert(
         photoUrls.map((url: string, i: number) => ({
           listing_id: listingId,
           url,
@@ -331,7 +334,8 @@ export default function ListReview() {
       );
 
       // 4. Insert provenance row (always — even if all fields are null)
-      await supabase.from('provenance').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('provenance').insert({
         listing_id: listingId,
         city_id: draft.provenanceCityId,
         area_id: draft.provenanceAreaId,
@@ -351,7 +355,8 @@ export default function ListReview() {
       ].some((v) => v.trim().length > 0);
 
       if (hasMeasurements) {
-        await supabase.from('listing_measurements').insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_measurements').insert({
           listing_id: listingId,
           bust_cm: parseCm(draft.listingBustCm),
           waist_cm: parseCm(draft.listingWaistCm),
@@ -365,7 +370,8 @@ export default function ListReview() {
 
       // 6. Insert private seller motivation
       if (draft.motivationTypeId !== null) {
-        await supabase.from('private_seller_motivation').insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('private_seller_motivation').insert({
           listing_id: listingId,
           user_id: sellerId,
           motivation_type_id: draft.motivationTypeId,
@@ -373,13 +379,15 @@ export default function ListReview() {
       }
 
       // 7. Insert trust score
-      await supabase.from('listing_trust_scores').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listing_trust_scores').insert({
         listing_id: listingId,
         total_score: totalScore,
       });
 
       // 8. Insert trust components
-      await supabase.from('listing_trust_components').insert(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listing_trust_components').insert(
         components.map((c: TrustComponent) => ({
           listing_id: listingId,
           component_name: c.label,

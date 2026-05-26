@@ -13,6 +13,7 @@ interface ListingDraftData {
   colourId: number | null;
   conditionId: number | null;
   careStatusId: number | null;
+  whySellingCopyId: number | null;
   motivationTypeId: number | null;
 
   // Step 2 — Provenance
@@ -67,6 +68,7 @@ interface ListingDraftActions {
   setColourId: (id: number | null) => void;
   setConditionId: (id: number | null) => void;
   setCareStatusId: (id: number | null) => void;
+  setWhySellingCopyId: (id: number | null) => void;
   setMotivationTypeId: (id: number | null) => void;
   // Step 2 — Provenance
   setIsHeirloom: (v: boolean) => void;
@@ -116,6 +118,7 @@ const initialData: ListingDraftData = {
   colourId: null,
   conditionId: null,
   careStatusId: null,
+  whySellingCopyId: null,
   motivationTypeId: null,
   isHeirloom: false,
   heirloomStory: '',
@@ -157,6 +160,7 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   setColourId: (id) => set({ colourId: id }),
   setConditionId: (id) => set({ conditionId: id }),
   setCareStatusId: (id) => set({ careStatusId: id }),
+  setWhySellingCopyId: (id) => set({ whySellingCopyId: id }),
   setMotivationTypeId: (id) => set({ motivationTypeId: id }),
 
   // Step 2 — Provenance

@@ -22,6 +22,7 @@ export interface ListingDetailProvenance {
 
 export interface ListingDetail {
   id: string
+  sellerId: string | null
   status: ListingStatus
   negotiationActive: boolean
   waitlistCount: number
