@@ -83,7 +83,7 @@ Almari exists for private individuals passing clothes from their own wardrobes. 
 
 If we identify that an account is operating commercially — by volume of listings, by stock photography, by identical or near-identical items, or by any other indicator — we will suspend that account immediately and permanently, without refund of any fees paid.
 
-If you are unsure whether your use qualifies as private, contact us before listing.
+If you are not sure whether you qualify as a private individual, you don't. Do not list.
 
 ---
 
