@@ -4,6 +4,23 @@ Everything here is fully designed and agreed. Not building it for launch to keep
 
 ---
 
+## Pre-launch DB migrations (run in Supabase SQL editor before TestFlight)
+
+### Add `parent_listing_id` to listings
+Enables relist chain — traces a piece across multiple listings over time. Trust signal: "this piece has been on Almari before, properly described and photographed."
+```sql
+ALTER TABLE listings ADD COLUMN parent_listing_id UUID REFERENCES listings(id);
+```
+
+### Add `cancellation_reason` to transactions
+Required for analytics on failed sales and seller/buyer trust scoring.
+```sql
+ALTER TABLE transactions ADD COLUMN cancellation_reason TEXT
+  CHECK (cancellation_reason IN ('buyer_did_not_pay','seller_did_not_dispatch','mutual_agreement','item_not_as_described','other'));
+```
+
+---
+
 ## Priority 1 — Add after first 50 users
 
 ### Make an Offer + Negotiation Engine

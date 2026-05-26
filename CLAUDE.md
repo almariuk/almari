@@ -107,6 +107,7 @@ When a new feature or change is requested, reason about the full system impact f
 - Never show postage margin
 - Trust score shown as diya/firework visual only, never as a raw number to buyers/sellers
 - Merge all work to main at end of every session — never leave built code on a feature branch
+- At the start of every session read CLAUDE.md, ALMARI_PRD.md and ALMARI_BACKLOG.md before doing anything else
 
 ---
 
