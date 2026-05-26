@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -261,6 +262,20 @@ export default function Register() {
               }
             </TouchableOpacity>
 
+            {mode === 'register' && (
+              <Text style={[s.consentText, { color: theme.textDisabled }]}>
+                By creating an account you agree to our{' '}
+                <Text style={{ color: theme.accent }} onPress={() => Linking.openURL('https://almari.uk/terms')}>
+                  Terms &amp; Conditions
+                </Text>
+                {' '}and{' '}
+                <Text style={{ color: theme.accent }} onPress={() => Linking.openURL('https://almari.uk/privacy')}>
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            )}
+
             <TouchableOpacity
               style={s.linkBtn}
               onPress={() => { setMode(m => m === 'register' ? 'signin' : 'register'); clearError(); }}
@@ -346,6 +361,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     },
     linkBtn:  { alignItems: 'center', paddingVertical: 14 },
     linkText: { fontFamily: 'Inter_400Regular', fontSize: 14 },
+    consentText: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18, textAlign: 'center', paddingHorizontal: 8, marginTop: 4 },
 
     codeInput: {
       borderWidth: 1.5,

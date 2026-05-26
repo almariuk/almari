@@ -8,6 +8,7 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -661,6 +662,21 @@ export default function Profile() {
           <Text style={[s.signOutText, { color: theme.error }]}>Sign out</Text>
         </TouchableOpacity>
 
+        {/* Legal footer */}
+        <View style={s.legalFooter}>
+          <Text style={[s.legalLink, { color: theme.textDisabled }]} onPress={() => Linking.openURL('https://almari.uk/terms')}>
+            Terms &amp; Conditions
+          </Text>
+          <Text style={[s.legalDot, { color: theme.textDisabled }]}>·</Text>
+          <Text style={[s.legalLink, { color: theme.textDisabled }]} onPress={() => Linking.openURL('https://almari.uk/privacy')}>
+            Privacy Policy
+          </Text>
+          <Text style={[s.legalDot, { color: theme.textDisabled }]}>·</Text>
+          <Text style={[s.legalLink, { color: theme.textDisabled }]} onPress={() => Linking.openURL('https://almari.uk/values')}>
+            About Almari
+          </Text>
+        </View>
+
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -730,5 +746,9 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     signOutBtn:  { borderWidth: 1.5, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
     signOutText: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
+
+    legalFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 },
+    legalLink:   { fontFamily: 'Inter_400Regular', fontSize: 12 },
+    legalDot:    { fontFamily: 'Inter_400Regular', fontSize: 12 },
   });
 }
