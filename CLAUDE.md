@@ -11,6 +11,73 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 ## Tonight's task list
 
 - [ ] **Image optimisation** — Switch `ListingCard` and `PhotoCarousel` from raw Supabase Storage URLs to the CDN render endpoint with size/quality params. Feed cards: `?width=400&quality=75`. Detail carousel: `?width=800&quality=85`. One change per component, big real-world impact on slow devices.
+- [ ] **S21 measurements screen** — Pull from Chromebook (push from there first). If not pushed, rebuild: editable adult measurements form, accessible from profile. Extract form from `welcome.tsx` into `components/profile/MeasurementsForm.tsx`, reuse in both.
+
+---
+
+## Pending build plan
+
+### Phase 1 — Get to TestFlight
+- [ ] P1: Fix pre-existing TypeScript errors — `profile/index.tsx`, `_layout.tsx`, `list/review.tsx` (Supabase type-gen, `.insert()`/`.update()` returning `never`)
+- [ ] P2: Set EAS secrets — `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- [ ] P3: Verify `eas.json` and `app.config.ts` — build profiles, bundle IDs, signing certs
+- [ ] P4: EAS build iOS → TestFlight internal track
+- [ ] P5: EAS build Android → Play Store internal testing track
+
+### Phase 2 — Social sign-in
+- [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
+- [ ] A2: Google Sign-In — `@react-native-google-signin/google-signin` + Supabase Google provider
+- [ ] A3: Pre-fill name on `welcome.tsx` onboarding from social provider data
+
+### Phase 3 — Complete the listing flow
+- [ ] L1: Why selling phrase — `why_selling_copy_id` already in `listings` schema, missing from draft store + Step 1 + review submit. Fetch from `micro_copy`, tap-to-select cards.
+- [ ] L2: S21 as standalone editable screen (see tonight's list)
+
+### Phase 4 — Kids measurement architecture
+- [ ] K1: Add `category_type TEXT ('women'|'men'|'kids')` to `categories` table + set values (DB migration — needs Supabase SQL editor)
+- [ ] K2: Add `age_from_years, age_to_years, height_from_cm, height_to_cm` to `listing_measurements` (DB migration)
+- [ ] K3: Create `user_measurement_profiles` table (DB migration — see architecture notes below)
+- [ ] K4: Listing Step 2 — kids-aware measurement section (age range + height when Kids category selected)
+- [ ] K5: Add kids measurement fields to draft store
+- [ ] K6: S21 rebuild as family profile manager — add/edit/delete profiles, adult + kids form modes, auto-migrate existing `user_profile` measurements to "Me" profile on first visit
+- [ ] K7: Fits Me profile picker — "Shopping for: Me ▾" in home feed + search. Active profile in Zustand.
+- [ ] K8: Update `utils/fit.ts` — kids fit logic. Labels: Fits now / Nearly there / Different size
+- [ ] K9: Kids measurement display on listing detail
+
+### Phase 5 — Profile completeness
+- [ ] PR1: My listings screen — `app/(app)/profile/my-listings.tsx` stub → real. Active / sold / removed tabs.
+- [ ] PR2: Bank details screen — `app/(app)/profile/bank-details.tsx` stub → real
+- [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank
+
+---
+
+## Architecture decisions (agreed 26 May 2025)
+
+**Kids categories:** Split into Kids - Girls (id:3) and Kids - Boys (id:4). Done in DB. `category_type` column to be added so app branches on this, never on name strings.
+
+**Family measurement profiles:** New `user_measurement_profiles` table. Kids profiles: `age_years + height_cm`. Adult profiles: `bust/waist/hips/height`. Schema:
+```sql
+CREATE TABLE user_measurement_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES user_identity(id) NOT NULL,
+    name TEXT NOT NULL,
+    relation TEXT CHECK (relation IN ('self','partner','daughter','son','other')),
+    age_group TEXT NOT NULL CHECK (age_group IN ('adult','kids')),
+    age_years INT,
+    bust_cm NUMERIC, chest_cm NUMERIC, waist_cm NUMERIC,
+    hips_cm NUMERIC, height_cm NUMERIC, uk_shoe_size NUMERIC(4,1),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Listing cap:** Removed entirely. Trigger `enforce_listing_cap` and function `check_listing_cap` dropped from DB. Anti-vendor protection via provenance + trust system.
+
+**Social sign-in:** Apple + Google only. Facebook dropped. Native `signInWithIdToken` path — not web OAuth redirect.
+
+**Fits Me kids labels:** Fits now / Nearly there / Different size. Not "Quick pin / Quick stitch" (adult tailoring concepts).
+
+**Image optimisation:** Supabase CDN render endpoint — `/render/image/public/` with `?width=X&quality=Y`. Feed cards: 400px/75. Detail carousel: 800px/85.
 
 ---
 
