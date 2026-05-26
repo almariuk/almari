@@ -95,11 +95,14 @@ When a new feature or change is requested, reason about the full system impact f
 
 **Trust score is a diya visual only — never show the number publicly.**
 
+**Be proactive, not reactive.** At the start of each session, scan the backlog and flag blockers or dependencies the user hasn't seen yet. When a decision has downstream consequences (e.g. fee model → payment architecture, legal requirement → App Store submission blocker), connect those dots and surface them — don't wait to be asked. Tell the user what's missing. Lead with the gaps.
+
 **Session rules (always apply):**
 - Confirm the plan before building anything
 - All colours via theme tokens — never hardcode hex
 - Never show postage margin
 - Trust score shown as diya/firework visual only, never as a raw number to buyers/sellers
+- Merge all work to main at end of every session — never leave built code on a feature branch
 
 ---
 
