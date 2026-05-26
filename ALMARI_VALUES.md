@@ -23,8 +23,8 @@ Almari is not a shop. It is not a generic marketplace that happens to have India
 **Sustainability is not a trend — it is how we were raised.**
 In our culture, nothing of quality is thrown away. A saree is mended, passed down, cherished across generations. Almari is the digital expression of that value. Every item that finds a new home on Almari is one less piece in a landfill and one more chapter in its story.
 
-**Trust is earned, not assumed.**
-Every member of the Almari community builds a trust score through their behaviour — how accurately they describe their items, how promptly they dispatch, how honestly they engage. Trust is shown as a diya, not a number. The community knows its own.
+**We trust our community.**
+Every member joins Almari as one of ours. The diya simply recognises and honours it — growing warmer as you become more known, with every sale, every purchase, every piece you describe with care.
 
 **Provenance is preservation.**
 When a saree passes through three Almari sales over twenty years, it carries the story of three diaspora families. That is not a used garment. It is a cultural artefact. Almari's provenance certificate records that history permanently.
