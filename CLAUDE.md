@@ -8,6 +8,12 @@
 
 Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Never write these to a file on disk — pass inline in curl commands.
 
+## Tonight's task list
+
+- [ ] **Image optimisation** — Switch `ListingCard` and `PhotoCarousel` from raw Supabase Storage URLs to the CDN render endpoint with size/quality params. Feed cards: `?width=400&quality=75`. Detail carousel: `?width=800&quality=85`. One change per component, big real-world impact on slow devices.
+
+---
+
 ## How to work with me
 
 **Think like an architect before writing a single line of code.**
