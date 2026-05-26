@@ -4,6 +4,7 @@ import { Image } from 'expo-image'
 import { IconChevronLeft } from '@tabler/icons-react-native'
 import { useRouter } from 'expo-router'
 import { useTheme } from '@/hooks/useTheme'
+import { cdnUrl } from '@/utils/image'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 export const CAROUSEL_HEIGHT = Math.round(SCREEN_WIDTH * 1.1)
@@ -17,7 +18,7 @@ export function PhotoCarousel({ urls }: Props) {
   const router = useRouter()
   const [activeIndex, setActiveIndex] = useState(0)
 
-  const photos = urls.length > 0 ? urls : [null]
+  const photos = urls.length > 0 ? urls.map(u => cdnUrl(u, 800, 85)) : [null]
 
   return (
     <View>
