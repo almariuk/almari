@@ -13,6 +13,7 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 - [ ] **Image optimisation** — Switch `ListingCard` and `PhotoCarousel` from raw Supabase Storage URLs to the CDN render endpoint with size/quality params. Feed cards: `?width=400&quality=75`. Detail carousel: `?width=800&quality=85`. One change per component, big real-world impact on slow devices.
 - [ ] **S21 measurements screen** — Pull from Chromebook (push from there first). If not pushed, rebuild: editable adult measurements form, accessible from profile. Extract form from `welcome.tsx` into `components/profile/MeasurementsForm.tsx`, reuse in both.
 - [ ] **Legal links** — Add "By creating an account you agree to our Terms & Conditions and Privacy Policy" (tappable links) to `register.tsx`. Add T&Cs, Privacy Policy, About Almari links to profile screen footer. Use placeholder URLs (`almari.uk/terms`, `almari.uk/privacy`, `almari.uk/values`) — swap for real pages before App Store submission. Required for Apple/Google approval.
+- [ ] **almari.uk website** — Build via GitHub Pages. Create `/docs` folder in repo with HTML pages: home (landing), terms (paste from ALMARI_TERMS.md), privacy, values. Enable GitHub Pages in repo settings. Point GoDaddy DNS to GitHub (one CNAME record). All free.
 
 ---
 
