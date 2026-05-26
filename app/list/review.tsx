@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { File as FSFile } from 'expo-file-system/next';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -47,16 +48,23 @@ const BUCKET = 'listing-photos';
 // ── Photo upload ───────────────────────────────────────────────
 
 async function uploadPhoto(uri: string, userId: string, index: number): Promise<string> {
-  const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
-  const path = `${userId}/${Date.now()}_${index}.${ext}`;
+  // Resize to max 1200px wide, re-encode as sRGB JPEG. This normalises colour
+  // profiles (P3 → sRGB) and strips EXIF orientation — both of which break
+  // Supabase's CDN transform and caused wrong colours / zoom on device.
+  const resized = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: 1200 } }],
+    { compress: 0.88, format: ImageManipulator.SaveFormat.JPEG },
+  );
+
+  const path = `${userId}/${Date.now()}_${index}.jpg`;
 
   // fetch().blob() triggers a Hermes "ArrayBuffer not supported" error inside
   // Supabase's storage client. Read as Uint8Array via the new FileSystem API,
   // which the storage client handles without re-wrapping.
-  const bytes = await new FSFile(uri).bytes();
+  const bytes = await new FSFile(resized.uri).bytes();
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, bytes, { contentType });
+  const { error } = await supabase.storage.from(BUCKET).upload(path, bytes, { contentType: 'image/jpeg' });
   if (error) throw new Error(`Photo upload failed: ${error.message}`);
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
