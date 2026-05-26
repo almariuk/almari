@@ -26,7 +26,7 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 - [ ] P5: EAS build Android → Play Store internal testing track
 
 ### Founder actions (not code)
-- [ ] ICO registration — £40/year at ico.org.uk. Legal requirement from day one of processing personal data commercially. Deferred until first revenue but noted as compliance debt.
+- [ ] ICO registration — £40/year at ico.org.uk. Strictly required when processing personal data commercially. Pre-revenue with a small community may qualify for the £0 not-for-profit tier. Revisit when fees are introduced or user base grows materially.
 - [ ] Privacy Policy — use Termly, customise data collection section to mention measurements, listing photos, provenance data. Host at almari.uk/privacy.
 - [ ] T&Cs — founder-written based on PRD. All sales final, C2C platform, no consumer return rights, lost in post process. Host at almari.uk/terms. Solicitor review when first revenue arrives.
 - [ ] Apple Developer account — $99/year. Required for TestFlight and App Store submission.
