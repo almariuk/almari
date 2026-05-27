@@ -46,6 +46,9 @@ Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manu
 ### Seller contact method nudge
 Payment instructions screen says "Contact {sellerName} directly" when no payment instructions set. Sellers should be nudged on the bank-details screen to include a WhatsApp number or contact method alongside their payment details. Update placeholder/hint text in `app/(app)/profile/bank-details.tsx`. Resend transactional emails (Phase 3) is the proper long-term solution.
 
+### Pinch to zoom on listing photos
+Buyers should be able to pinch-zoom into listing photos on S6 to inspect fabric, embroidery, condition. `PhotoCarousel` currently uses a plain `ScrollView` with `expo-image`. Use `react-native-reanimated` + `react-native-gesture-handler` pinch gesture, or swap to a library like `react-native-zoom-toolkit`. Zoom should reset on swipe to next photo.
+
 ### React Query staleTime
 `new QueryClient()` in `app/_layout.tsx` has no `staleTime` — feed refetches on every tab navigation. Add `defaultOptions: { queries: { staleTime: 60_000 } }` before launch volume makes this noticeable.
 
