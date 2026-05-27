@@ -31,23 +31,27 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [ ] Apple Developer account — $99/year. Required for TestFlight and App Store submission.
 - [ ] Google Play Developer account — $25 one-time. Required for Play Store.
 
-### Phase 2 — Payment + Stripe (S12)
-- [ ] S1: S12 Payment screen — checkout UI, order summary, Stripe payment sheet (`app/transaction/new/payment.tsx`)
-- [ ] S2: Stripe escrow integration — payment held on purchase, released after concern window
-- [ ] S3: Stripe Connect onboarding — seller bank account setup, flows into S19 bank details screen
-- [ ] S4: Sendcloud integration — Royal Mail label generation via API, called from S24 dispatch screen
-- [ ] S5: Exchange rate API — daily GBP/INR fetch, stored in DB, used for price context panel on S6
-- [ ] S6: Price context panel on S6 — original INR price, replacement cost, "X% below replacement", benchmark comparisons (requires exchange rate + benchmark_prices table seeded)
-- [ ] S7: Race condition handling — set listing status to `reserved` + `reserved_until` (10 min TTL) when Buy Now tapped; revert to `active` on payment failure or timeout
+### Phase 2 — Offline transaction flow (no Stripe/Sendcloud at launch)
+**Decision:** Launch without Stripe or Sendcloud. Buyers pay sellers directly (PayPal/Revolut/bank transfer). Sellers arrange their own postage. Stripe + Sendcloud slot in later as drop-in replacements — DB schema and screen flows are identical.
 
-### Phase 3 — Transaction screens (S22–S26)
-- [ ] T1: S22 My Purchases — buyer purchase list (active / completed) accessible from profile
-- [ ] T2: S23 Order detail, buyer view — status timeline, tracking, confirm receipt, raise concern button (`app/transaction/[id]/buyer.tsx`)
-- [ ] T3: S24 Order detail, seller view — dispatch instructions, confirm posted, Sendcloud label link, tracking entry, payout status (`app/transaction/[id]/seller.tsx`)
-- [ ] T4: S25 Raise a concern — 3 reasons, 48h countdown, confirmation step (`app/transaction/[id]/concern.tsx`)
-- [ ] T5: S26 Lost in post case — both parties confirm, Almari refund trigger (`app/transaction/[id]/lost-in-post.tsx`)
-- [ ] T6: Seller trust score events — wire up transaction events: sale completed (+5), purchase completed (+3), concern upheld (−10). Requires `trust_events` table and `trust_score` column on `user_profile` (see pre-launch DB migrations in backlog)
-- [ ] T7: Resend transactional emails — order confirmation, dispatch confirmation, delivery notification, concern raised/resolved (see backlog for full list)
+- [x] DB Step 1: Add `payment_reference`, `concern_raised_at`, `concern_reason`, `buyer_lost_confirmed_at`, `seller_lost_confirmed_at` to `transactions`; add `payment_instructions` to `user_profile`. RLS INSERT + UPDATE policies on transactions. DB trigger auto-reserves listing on transaction insert.
+- [x] Step 2: S19 Payment details screen — seller enters PayPal/Revolut/bank details (`app/(app)/profile/bank-details.tsx` converted from stub)
+- [x] Step 3: Buy Now flow — creates transaction (`pending_payment`), generates `ALM-XXXXX` reference, navigates to payment instructions screen (`app/transaction/new/payment-instructions.tsx`)
+- [x] Step 4: S22 My Purchases (`app/(app)/profile/purchases.tsx`) + My Sales (`app/(app)/profile/sales.tsx`) — list screens with status tabs, accessible from Profile → Orders
+- [x] Step 5: S23 Order detail, buyer view (`app/transaction/[id]/buyer.tsx`) — status timeline, payment reminder, tracking, confirm received (opens 48h concern window), raise a concern nav
+- [x] Step 6: S24 Order detail, seller view (`app/transaction/[id]/seller.tsx`) — confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed states
+- [ ] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`, emails atulblal@gmail.com
+- [ ] Step 8: S26 Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — both parties confirm, status → `refunded`, manual Almari refund
+- [ ] Step 9: Trust score events on completion — sale completed (+5), purchase completed (+3), concern upheld (−10)
+
+### Phase 3 — Stripe + Sendcloud (post-launch, when transaction volume justifies it)
+- [ ] S1: Replace payment instructions screen with Stripe payment sheet on S12
+- [ ] S2: Stripe escrow — payment held on purchase, released after concern window closes
+- [ ] S3: Stripe Connect onboarding — replaces `payment_instructions` free text in S19
+- [ ] S4: Sendcloud — Royal Mail label generation, called from S24 dispatch screen
+- [ ] S5: Exchange rate API — daily GBP/INR fetch for price context panel on S6
+- [ ] S6: Price context panel on S6 — original INR price, replacement cost, benchmark comparisons
+- [ ] T7: Resend transactional emails — order confirmation, dispatch, delivery, concern raised/resolved
 
 ### Phase 4 — Social sign-in
 - [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
@@ -74,7 +78,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [ ] K9: Kids measurement display on listing detail
 
 ### Phase 7 — Profile completeness + polish
-- [ ] PR2: Bank details screen — `app/(app)/profile/bank-details.tsx` stub → real (Stripe Connect onboarding, depends on Phase 2 S3)
+- [x] PR2: Payment details screen — `app/(app)/profile/bank-details.tsx` done. Seller enters PayPal/Revolut/bank details (offline model). Stripe Connect replaces this in Phase 3.
 - [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank → real (push notification history list)
 - [x] PR4: S27 Seller public profile — done. `app/profile/[id].tsx` built. Seller row on listing detail is tappable. Shows: first name + diya tier colour, member since, completed sales count, active listings grid.
 - [x] PR5: Empty states — design and implement all empty states per PRD table (feed, search, my listings, my purchases, seller profile)
@@ -173,13 +177,20 @@ When a new feature or change is requested, reason about the full system impact f
 | S3 — Auth (register/sign-in + OTP) | `app/(auth)/register.tsx` | Done |
 | S4 — Home feed | `app/(app)/index.tsx` | Done |
 | S5 — Search | `app/(app)/search.tsx` | Done (text search + category/subcategory/occasion/colour/condition/pattern/work/fabric/budget/fits-me filters) |
-| S6 — Listing detail | `app/listing/[id].tsx` | Done (price context panel pending — Phase 2) |
+| S6 — Listing detail | `app/listing/[id].tsx` | Done (seller row tappable → S27; price context panel post-launch) |
 | S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
 | S11 — Profile | `app/(app)/profile/index.tsx` | Done |
-| S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
+| S19 — Payment details | `app/(app)/profile/bank-details.tsx` | Done (offline model — PayPal/Revolut/bank transfer free text) |
 | S20 — My listings | `app/(app)/profile/my-listings.tsx` | Done (active / sold / removed tabs) |
-| S22–S26 — Transaction screens | `app/transaction/[id]/*` | Stubs — Phase 3 |
-| S19 — Bank details | `app/(app)/profile/bank-details.tsx` | Stub — Phase 7 |
+| S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
+| S22 — My Purchases | `app/(app)/profile/purchases.tsx` | Done (Active / Done tabs) |
+| S22 — My Sales | `app/(app)/profile/sales.tsx` | Done (New / In progress / Done tabs) |
+| S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, confirm received, raise concern nav) |
+| S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
+| Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (shown after Buy Now) |
+| S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Stub — Step 7 |
+| S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Stub — Step 8 |
+| S27 — Seller public profile | `app/profile/[id].tsx` | Done (diya, member since, listings grid) |
 
 ### Key components
 - `components/listings/ListingCard.tsx` — feed card with press animation (Reanimated v4)
