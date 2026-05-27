@@ -42,6 +42,7 @@ export interface UserProfileRow {
   free_listing_reinstated_at: string | null;
   stripe_account_id: string | null;
   bank_details_provided: boolean;
+  payment_instructions: string | null;
   active_listing_count: number;
   created_at: string;
   updated_at: string;

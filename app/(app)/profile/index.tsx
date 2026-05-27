@@ -516,11 +516,11 @@ export default function Profile() {
           />
         </SectionCard>
 
-        {/* Bank details */}
-        <SectionCard title="Bank details">
+        {/* Payment details */}
+        <SectionCard title="Payment details">
           <NavRow
-            label={profile?.bank_details_provided ? 'Bank details on file' : 'Set up bank details'}
-            sublabel={profile?.bank_details_provided ? 'Payouts enabled' : 'Required to receive payouts'}
+            label={profile?.bank_details_provided ? 'Payment details saved' : 'Set up payment details'}
+            sublabel={profile?.bank_details_provided ? 'Buyers can pay you' : 'Required before you can sell'}
             onPress={() => router.push('/profile/bank-details')}
             badge={profile?.bank_details_provided ? 'connected' : 'pending'}
           />
