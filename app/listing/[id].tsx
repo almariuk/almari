@@ -334,11 +334,11 @@ export default function ListingDetail() {
       <View style={[s.bottomBar, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
         {isSeller ? (
           <TouchableOpacity
-            style={[s.buyBtn, s.editBtn, { backgroundColor: theme.surface, borderColor: theme.accent }]}
+            style={[s.buyBtn, s.editBtn, { backgroundColor: theme.accent }]}
             onPress={() => router.push(`/list/edit/${listing.id}` as any)}
             activeOpacity={0.85}
           >
-            <Text style={[s.buyBtnText, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>
+            <Text style={[s.buyBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
               Edit listing
             </Text>
           </TouchableOpacity>
@@ -471,7 +471,6 @@ const s = StyleSheet.create({
   editBtn: {
     flex: 1,
     alignItems: 'center',
-    borderWidth: 1.5,
   },
   buyBtnText: { fontSize: 15 },
   unavailableText: { flex: 1, textAlign: 'center', fontSize: 16 },
