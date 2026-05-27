@@ -9,7 +9,7 @@ export default function Notifications() {
     <SafeAreaView style={[s.root, { backgroundColor: theme.background }]}>
       <View style={s.inner}>
         <Text style={[s.heading, { color: theme.text, fontFamily: 'CormorantGaramond_700Bold' }]}>Notifications</Text>
-        <Text style={[s.body, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Coming soon.</Text>
+        <Text style={[s.body, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>No new notifications.</Text>
       </View>
     </SafeAreaView>
   );

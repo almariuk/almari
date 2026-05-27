@@ -328,6 +328,19 @@ export default function Profile() {
     enabled: !!identityId,
   });
 
+  const orderCountsQuery = useQuery<{ purchases: number; sales: number }>({
+    queryKey: ['order_counts', identityId],
+    queryFn: async () => {
+      const ACTIVE = ['pending_payment', 'paid', 'dispatched', 'delivered', 'concern_open', 'concern_resolved'];
+      const [p, s] = await Promise.all([
+        (supabase as any).from('transactions').select('id', { count: 'exact', head: true }).eq('buyer_id', identityId).in('status', ACTIVE),
+        (supabase as any).from('transactions').select('id', { count: 'exact', head: true }).eq('seller_id', identityId).in('status', ACTIVE),
+      ]);
+      return { purchases: p.count ?? 0, sales: s.count ?? 0 };
+    },
+    enabled: !!identityId,
+  });
+
   // ── Derived ───────────────────────────────────────────────────
 
   const { data: trustTiers = [] } = useTrustTiers();
@@ -368,6 +381,25 @@ export default function Profile() {
             <Text style={s.headerTier}>{tier.name}</Text>
           </View>
           <IconCandleFilled size={56} color={getDiyaColour(profile?.trust_score_cached ?? 0, trustTiers)} />
+        </View>
+
+        {/* KPI row — Listings / Purchases / Sales */}
+        <View style={s.kpiRow}>
+          {([
+            { label: 'Listings', count: profile?.active_listing_count ?? 0, route: '/profile/my-listings' },
+            { label: 'Purchases', count: orderCountsQuery.data?.purchases ?? 0, route: '/profile/purchases' },
+            { label: 'Sales', count: orderCountsQuery.data?.sales ?? 0, route: '/profile/sales' },
+          ] as const).map(({ label, count, route }) => (
+            <TouchableOpacity
+              key={label}
+              style={[s.kpiTile, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              onPress={() => router.push(route as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.kpiCount, { color: theme.text }]}>{count}</Text>
+              <Text style={[s.kpiLabel, { color: theme.textSecondary }]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Personal details */}
@@ -526,15 +558,6 @@ export default function Profile() {
           />
         </SectionCard>
 
-        {/* My listings */}
-        <SectionCard title="My listings">
-          <NavRow
-            label="View all listings"
-            sublabel={`${profile?.active_listing_count ?? 0} active`}
-            onPress={() => router.push('/profile/my-listings')}
-          />
-        </SectionCard>
-
         {/* Trust score */}
         <SectionCard title="Your trust">
           <View style={s.trustCenter}>
@@ -612,20 +635,6 @@ export default function Profile() {
           )}
         </SectionCard>
 
-        {/* My purchases + My sales */}
-        <SectionCard title="Orders">
-          <NavRow
-            label="My purchases"
-            sublabel="Items you've bought"
-            onPress={() => router.push('/profile/purchases')}
-          />
-          <NavRow
-            label="My sales"
-            sublabel="Orders from your listings"
-            onPress={() => router.push('/profile/sales')}
-          />
-        </SectionCard>
-
         {/* Theme picker */}
         <SectionCard title="Colour theme">
           <View style={s.swatchRow}>
@@ -686,7 +695,12 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     root:  { flex: 1, backgroundColor: theme.background },
     scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
 
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+
+    kpiRow:   { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    kpiTile:  { flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 14, alignItems: 'center', gap: 3 },
+    kpiCount: { fontFamily: 'CormorantGaramond_700Bold', fontSize: 28, lineHeight: 32 },
+    kpiLabel: { fontFamily: 'Inter_400Regular', fontSize: 12 },
     headerText: { flex: 1, paddingRight: 16 },
     headerName: { fontFamily: 'CormorantGaramond_700Bold', fontSize: 32, color: theme.text, lineHeight: 36 },
     headerTier: { fontFamily: 'Inter_400Regular', fontSize: 14, color: theme.textSecondary, marginTop: 2 },

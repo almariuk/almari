@@ -40,6 +40,16 @@ Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manu
 
 ---
 
+## Pre-launch DB migrations — ALL DONE (with one code cleanup pending)
+
+### Buy Now — guard against duplicate transactions
+A buyer can end up with two `pending_payment` transactions for the same listing if Buy Now is tapped across sessions or after an error. The `buying` flag only guards within one session. Fix: before inserting, check if an active transaction already exists for this `listing_id` + `buyer_id` and navigate to it instead of creating a new one. Alternatively add a partial unique index: `CREATE UNIQUE INDEX ON transactions (listing_id, buyer_id) WHERE status = 'pending_payment'`.
+
+### transactions insert — remove dummy Stripe-era values
+When the offline model was adopted, `postage_cost_pence`, `seller_receives_pence`, and `escrow_status` were left as NOT NULL on `transactions`. The NOT NULL constraints have since been dropped (migration run 2026-05-27), but `handleBuyNow` in `app/listing/[id].tsx` still sends dummy values (`postage_cost_pence: postagePrice`, `seller_receives_pence: salePrice`). Remove these from the insert once confirmed stable — they should only be set when Stripe comes in Phase 3.
+
+---
+
 ## Pre-launch DB migrations — ALL DONE
 
 All required columns exist in the DB. Run this session or previously:
