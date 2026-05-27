@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Alert, View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { IconCandleFilled } from '@tabler/icons-react-native'
+import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
 import { useListingDetail } from '@/hooks/useListingDetail'
@@ -143,9 +145,39 @@ export default function ListingDetail() {
   const isWaitlisted = listing.negotiationActive || listing.waitlistCount > 0
 
   const isSeller = !!identity?.id && identity.id === listing.sellerId
+  const [buying, setBuying] = useState(false)
 
-  const handleBuyNow = () => {
-    Alert.alert('Buy now', 'Payments are coming soon. Check back shortly.', [{ text: 'OK' }])
+  const handleBuyNow = async () => {
+    if (!identity?.id || !listing.sellerId) return
+    setBuying(true)
+
+    const ref = 'ALM-' + Math.random().toString(36).substring(2, 7).toUpperCase()
+    const salePrice = listing.askingPricePence ?? 0
+    const postagePrice = listing.postagePricePence ?? 0
+
+    const { data: txn, error: txnError } = await (supabase as any)
+      .from('transactions')
+      .insert({
+        listing_id: listing.id,
+        buyer_id: identity.id,
+        seller_id: listing.sellerId,
+        status: 'pending_payment',
+        payment_reference: ref,
+        sale_price_pence: salePrice,
+        postage_price_pence: postagePrice,
+        total_paid_pence: salePrice + postagePrice,
+      })
+      .select('id')
+      .single()
+
+    if (txnError) {
+      setBuying(false)
+      Alert.alert('Error', 'Could not place order. Please try again.')
+      return
+    }
+
+    setBuying(false)
+    router.push(`/transaction/new/payment-instructions?id=${txn.id}` as any)
   }
 
   const handleJoinWaitlist = () => {
@@ -364,19 +396,23 @@ export default function ListingDetail() {
                 { backgroundColor: isWaitlisted ? theme.surface : theme.accent },
               ]}
               onPress={isWaitlisted ? handleJoinWaitlist : handleBuyNow}
+              disabled={buying}
               activeOpacity={0.85}
             >
-              <Text
-                style={[
-                  s.buyBtnText,
-                  {
-                    color: isWaitlisted ? theme.accent : theme.accentText,
-                    fontFamily: 'Inter_600SemiBold',
-                  },
-                ]}
-              >
-                {isWaitlisted ? 'Join waitlist' : 'Buy now'}
-              </Text>
+              {buying
+                ? <ActivityIndicator color={theme.accentText} size="small" />
+                : <Text
+                    style={[
+                      s.buyBtnText,
+                      {
+                        color: isWaitlisted ? theme.accent : theme.accentText,
+                        fontFamily: 'Inter_600SemiBold',
+                      },
+                    ]}
+                  >
+                    {isWaitlisted ? 'Join waitlist' : 'Buy now'}
+                  </Text>
+              }
             </TouchableOpacity>
           </>
         )}
