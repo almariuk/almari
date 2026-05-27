@@ -612,25 +612,18 @@ export default function Profile() {
           )}
         </SectionCard>
 
-        {/* Purchase history */}
-        <SectionCard title="Purchases">
-          {purchaseQuery.isLoading ? (
-            <ActivityIndicator size="small" color={theme.accent} />
-          ) : (purchaseQuery.data ?? []).length === 0 ? (
-            <Text style={[s.emptyNote, { color: theme.textDisabled }]}>Nothing purchased yet</Text>
-          ) : (
-            (purchaseQuery.data ?? []).map((t: TransactionRow) => (
-              <View key={t.id} style={[s.historyRow, { borderBottomColor: theme.border }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.historyMain, { color: theme.text }]}>{gbp(t.total_paid_pence)}</Text>
-                  <Text style={[s.historySub, { color: theme.textSecondary }]}>{fmtDate(t.created_at)}</Text>
-                </View>
-                <Text style={[s.historyStatus, { color: theme.textSecondary }]}>
-                  {txStatusLabel(t.status)}
-                </Text>
-              </View>
-            ))
-          )}
+        {/* My purchases + My sales */}
+        <SectionCard title="Orders">
+          <NavRow
+            label="My purchases"
+            sublabel="Items you've bought"
+            onPress={() => router.push('/profile/purchases')}
+          />
+          <NavRow
+            label="My sales"
+            sublabel="Orders from your listings"
+            onPress={() => router.push('/profile/sales')}
+          />
         </SectionCard>
 
         {/* Theme picker */}
