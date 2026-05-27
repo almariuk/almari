@@ -60,7 +60,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [ ] L3: Removal score logic — post-launch (see backlog)
 - [x] L4: Private seller motivation — confirmed built. `seller_motivation_type_id` saved to `listings`, full record written to `private_seller_motivation` table on submit.
 - [ ] L5: Draft listing persistence — post-launch (see backlog)
-- [ ] L6: Sort options on S5 search — add sort bar: Newest first (default) / Price low→high / Price high→low / Best fit
+- [x] L6: Sort options on S5 search — done. Sort bar: Newest / Price ↑ / Price ↓. `SortBy` type + `sortBy` filter in `useFeedListings`.
 
 ### Phase 6 — Kids measurement architecture
 - [ ] K1: Add `category_type TEXT ('women'|'men'|'kids')` to `categories` table + set values (DB migration — needs Supabase SQL editor)
@@ -76,8 +76,8 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 ### Phase 7 — Profile completeness + polish
 - [ ] PR2: Bank details screen — `app/(app)/profile/bank-details.tsx` stub → real (Stripe Connect onboarding, depends on Phase 2 S3)
 - [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank → real (push notification history list)
-- [ ] PR4: S27 Seller public profile — tappable from listing card and listing detail. Shows: first name, diya tier, member since, completed sales count, active listings grid (`app/profile/[id].tsx`)
-- [ ] PR5: Empty states — design and implement all empty states per PRD table (feed, search, my listings, my purchases, seller profile)
+- [x] PR4: S27 Seller public profile — done. `app/profile/[id].tsx` built. Seller row on listing detail is tappable. Shows: first name + diya tier colour, member since, completed sales count, active listings grid.
+- [x] PR5: Empty states — design and implement all empty states per PRD table (feed, search, my listings, my purchases, seller profile)
 
 ---
 
