@@ -24,6 +24,9 @@ Status timeline, payment reminder (pending_payment), tracking (dispatched), conf
 ### S24 — Order detail, seller view — DONE (`app/transaction/[id]/seller.tsx`)
 Confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed/refunded states.
 
+### Buy Now — block if seller has no payment details
+If seller hasn't filled in payment details, the Buy Now button on S6 should be disabled with a message: "Seller hasn't set up payment yet." Prevents dead-end on payment instructions screen. Check `seller.user_profile.payment_instructions` in `useListingDetail`.
+
 ### S25 — Raise a concern (`app/transaction/[id]/concern.tsx`) — stub, Step 7
 - Three reasons: item significantly not as described / item not received / other
 - Confirmation step before submitting
@@ -37,6 +40,14 @@ Confirm payment received, tracking entry + mark dispatched, dispatched/delivered
 
 ### Trust score events — Step 9
 Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manual by Almari): seller −10. Requires `trust_events` table (already in DB).
+
+---
+
+### Seller contact method nudge
+Payment instructions screen says "Contact {sellerName} directly" when no payment instructions set. Sellers should be nudged on the bank-details screen to include a WhatsApp number or contact method alongside their payment details. Update placeholder/hint text in `app/(app)/profile/bank-details.tsx`. Resend transactional emails (Phase 3) is the proper long-term solution.
+
+### React Query staleTime
+`new QueryClient()` in `app/_layout.tsx` has no `staleTime` — feed refetches on every tab navigation. Add `defaultOptions: { queries: { staleTime: 60_000 } }` before launch volume makes this noticeable.
 
 ---
 
@@ -59,6 +70,8 @@ All required columns exist in the DB. Run this session or previously:
 - `trust_events` table ✅
 - RLS policies on transactions (buyer/seller read, buyer insert, buyer/seller update) ✅
 - DB trigger `trg_reserve_listing` — auto-reserves listing on transaction insert ✅
+- `transactions_status_check` constraint updated to match PRD status machine ✅
+- `postage_cost_pence`, `seller_receives_pence`, `escrow_status` made nullable (Stripe-era fields) ✅
 
 ---
 

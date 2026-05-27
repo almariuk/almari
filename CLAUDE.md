@@ -36,7 +36,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 
 - [x] DB Step 1: Add `payment_reference`, `concern_raised_at`, `concern_reason`, `buyer_lost_confirmed_at`, `seller_lost_confirmed_at` to `transactions`; add `payment_instructions` to `user_profile`. RLS INSERT + UPDATE policies on transactions. DB trigger auto-reserves listing on transaction insert.
 - [x] Step 2: S19 Payment details screen — seller enters PayPal/Revolut/bank details (`app/(app)/profile/bank-details.tsx` converted from stub)
-- [x] Step 3: Buy Now flow — creates transaction (`pending_payment`), generates `ALM-XXXXX` reference, navigates to payment instructions screen (`app/transaction/new/payment-instructions.tsx`)
+- [x] Step 3: Buy Now flow — confirm screen (`app/transaction/new/confirm.tsx`) → creates transaction (`pending_payment`), generates `ALM-XXXXX` reference, navigates to payment instructions screen (`app/transaction/new/payment-instructions.tsx`). Listing detail hides Buy Now when status is `reserved`/`sold`. Feed invalidated on purchase.
 - [x] Step 4: S22 My Purchases (`app/(app)/profile/purchases.tsx`) + My Sales (`app/(app)/profile/sales.tsx`) — list screens with status tabs, accessible from Profile → Orders
 - [x] Step 5: S23 Order detail, buyer view (`app/transaction/[id]/buyer.tsx`) — status timeline, payment reminder, tracking, confirm received (opens 48h concern window), raise a concern nav
 - [x] Step 6: S24 Order detail, seller view (`app/transaction/[id]/seller.tsx`) — confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed states
@@ -179,7 +179,7 @@ When a new feature or change is requested, reason about the full system impact f
 | S5 — Search | `app/(app)/search.tsx` | Done (text search + category/subcategory/occasion/colour/condition/pattern/work/fabric/budget/fits-me filters) |
 | S6 — Listing detail | `app/listing/[id].tsx` | Done (seller row tappable → S27; price context panel post-launch) |
 | S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
-| S11 — Profile | `app/(app)/profile/index.tsx` | Done |
+| S11 — Profile | `app/(app)/profile/index.tsx` | Done (KPI row at top: Listings / Purchases / Sales with live counts) |
 | S19 — Payment details | `app/(app)/profile/bank-details.tsx` | Done (offline model — PayPal/Revolut/bank transfer free text) |
 | S20 — My listings | `app/(app)/profile/my-listings.tsx` | Done (active / sold / removed tabs) |
 | S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
@@ -187,7 +187,8 @@ When a new feature or change is requested, reason about the full system impact f
 | S22 — My Sales | `app/(app)/profile/sales.tsx` | Done (New / In progress / Done tabs) |
 | S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, confirm received, raise concern nav) |
 | S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
-| Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (shown after Buy Now) |
+| Order confirm | `app/transaction/new/confirm.tsx` | Done (item summary + price, "Place order" creates transaction) |
+| Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (shown after Place order) |
 | S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Stub — Step 7 |
 | S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Stub — Step 8 |
 | S27 — Seller public profile | `app/profile/[id].tsx` | Done (diya, member since, listings grid) |
