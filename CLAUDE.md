@@ -10,21 +10,19 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 
 ## Tonight's task list
 
-- [ ] **Image optimisation** — Switch `ListingCard` and `PhotoCarousel` from raw Supabase Storage URLs to the CDN render endpoint with size/quality params. Feed cards: `?width=400&quality=75`. Detail carousel: `?width=800&quality=85`. One change per component, big real-world impact on slow devices.
-- [ ] **S21 measurements screen** — Pull from Chromebook (push from there first). If not pushed, rebuild: editable adult measurements form, accessible from profile. Extract form from `welcome.tsx` into `components/profile/MeasurementsForm.tsx`, reuse in both.
-- [ ] **Legal links** — Add "By creating an account you agree to our Terms & Conditions and Privacy Policy" (tappable links) to `register.tsx`. Add T&Cs, Privacy Policy, About Almari links to profile screen footer. Use placeholder URLs (`almari.uk/terms`, `almari.uk/privacy`, `almari.uk/values`) — swap for real pages before App Store submission. Required for Apple/Google approval.
-- [ ] **almari.uk website** — Build via GitHub Pages. Create `/docs` folder in repo with HTML pages: home (landing), terms (paste from ALMARI_TERMS.md), privacy, values. Enable GitHub Pages in repo settings. Point GoDaddy DNS to GitHub (one CNAME record). All free.
+All done. Focus is now Phase 1 — Get to TestFlight.
 
 ---
 
 ## Pending build plan
 
 ### Phase 1 — Get to TestFlight
-- [ ] P1: Fix pre-existing TypeScript errors — `profile/index.tsx`, `_layout.tsx`, `list/review.tsx` (Supabase type-gen, `.insert()`/`.update()` returning `never`)
+- [x] P1: Fix pre-existing TypeScript errors — `profile/index.tsx`, `_layout.tsx`, `list/review.tsx` (Supabase type-gen, `.insert()`/`.update()` returning `never`)
 - [ ] P2: Set EAS secrets — `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - [ ] P3: Verify `eas.json` and `app.config.ts` — build profiles, bundle IDs, signing certs
 - [ ] P4: EAS build iOS → TestFlight internal track
 - [ ] P5: EAS build Android → Play Store internal testing track
+- [x] P6: 3 remaining DB migrations — `listings.reserved_until`, `listings.parent_listing_id`, `transactions.cancellation_reason`, `trust_events` table + RLS policy
 
 ### Founder actions (not code)
 - [ ] ICO registration — £40/year at ico.org.uk. Strictly required when processing personal data commercially. Pre-revenue with a small community may qualify for the £0 not-for-profit tier. Revisit when fees are introduced or user base grows materially.
@@ -33,16 +31,38 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 - [ ] Apple Developer account — $99/year. Required for TestFlight and App Store submission.
 - [ ] Google Play Developer account — $25 one-time. Required for Play Store.
 
-### Phase 2 — Social sign-in
+### Phase 2 — Payment + Stripe (S12)
+- [ ] S1: S12 Payment screen — checkout UI, order summary, Stripe payment sheet (`app/transaction/new/payment.tsx`)
+- [ ] S2: Stripe escrow integration — payment held on purchase, released after concern window
+- [ ] S3: Stripe Connect onboarding — seller bank account setup, flows into S19 bank details screen
+- [ ] S4: Sendcloud integration — Royal Mail label generation via API, called from S24 dispatch screen
+- [ ] S5: Exchange rate API — daily GBP/INR fetch, stored in DB, used for price context panel on S6
+- [ ] S6: Price context panel on S6 — original INR price, replacement cost, "X% below replacement", benchmark comparisons (requires exchange rate + benchmark_prices table seeded)
+- [ ] S7: Race condition handling — set listing status to `reserved` + `reserved_until` (10 min TTL) when Buy Now tapped; revert to `active` on payment failure or timeout
+
+### Phase 3 — Transaction screens (S22–S26)
+- [ ] T1: S22 My Purchases — buyer purchase list (active / completed) accessible from profile
+- [ ] T2: S23 Order detail, buyer view — status timeline, tracking, confirm receipt, raise concern button (`app/transaction/[id]/buyer.tsx`)
+- [ ] T3: S24 Order detail, seller view — dispatch instructions, confirm posted, Sendcloud label link, tracking entry, payout status (`app/transaction/[id]/seller.tsx`)
+- [ ] T4: S25 Raise a concern — 3 reasons, 48h countdown, confirmation step (`app/transaction/[id]/concern.tsx`)
+- [ ] T5: S26 Lost in post case — both parties confirm, Almari refund trigger (`app/transaction/[id]/lost-in-post.tsx`)
+- [ ] T6: Seller trust score events — wire up transaction events: sale completed (+5), purchase completed (+3), concern upheld (−10). Requires `trust_events` table and `trust_score` column on `user_profile` (see pre-launch DB migrations in backlog)
+- [ ] T7: Resend transactional emails — order confirmation, dispatch confirmation, delivery notification, concern raised/resolved (see backlog for full list)
+
+### Phase 4 — Social sign-in
 - [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
 - [ ] A2: Google Sign-In — `@react-native-google-signin/google-signin` + Supabase Google provider
 - [ ] A3: Pre-fill name on `welcome.tsx` onboarding from social provider data
 
-### Phase 3 — Complete the listing flow
-- [ ] L1: Why selling phrase — `why_selling_copy_id` already in `listings` schema, missing from draft store + Step 1 + review submit. Fetch from `micro_copy`, tap-to-select cards.
-- [ ] L2: S21 as standalone editable screen (see tonight's list)
+### Phase 5 — Complete the listing flow
+- [x] L1: Why selling phrase — done. `why_selling_copy_id` saved to `listings`, tap-to-select cards in Step 1.
+- [ ] L2: S18 Removal reason screen — post-launch (see backlog)
+- [ ] L3: Removal score logic — post-launch (see backlog)
+- [x] L4: Private seller motivation — confirmed built. `seller_motivation_type_id` saved to `listings`, full record written to `private_seller_motivation` table on submit.
+- [ ] L5: Draft listing persistence — post-launch (see backlog)
+- [ ] L6: Sort options on S5 search — add sort bar: Newest first (default) / Price low→high / Price high→low / Best fit
 
-### Phase 4 — Kids measurement architecture
+### Phase 6 — Kids measurement architecture
 - [ ] K1: Add `category_type TEXT ('women'|'men'|'kids')` to `categories` table + set values (DB migration — needs Supabase SQL editor)
 - [ ] K2: Add `age_from_years, age_to_years, height_from_cm, height_to_cm` to `listing_measurements` (DB migration)
 - [ ] K3: Create `user_measurement_profiles` table (DB migration — see architecture notes below)
@@ -53,10 +73,11 @@ Use the service role key for any DB writes (bypasses RLS). Use the anon key for 
 - [ ] K8: Update `utils/fit.ts` — kids fit logic. Labels: Fits now / Nearly there / Different size
 - [ ] K9: Kids measurement display on listing detail
 
-### Phase 5 — Profile completeness
-- [ ] PR1: My listings screen — `app/(app)/profile/my-listings.tsx` stub → real. Active / sold / removed tabs.
-- [ ] PR2: Bank details screen — `app/(app)/profile/bank-details.tsx` stub → real
-- [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank
+### Phase 7 — Profile completeness + polish
+- [ ] PR2: Bank details screen — `app/(app)/profile/bank-details.tsx` stub → real (Stripe Connect onboarding, depends on Phase 2 S3)
+- [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank → real (push notification history list)
+- [ ] PR4: S27 Seller public profile — tappable from listing card and listing detail. Shows: first name, diya tier, member since, completed sales count, active listings grid (`app/profile/[id].tsx`)
+- [ ] PR5: Empty states — design and implement all empty states per PRD table (feed, search, my listings, my purchases, seller profile)
 
 ---
 
@@ -128,6 +149,10 @@ When a new feature or change is requested, reason about the full system impact f
 - expo-image for photos
 - react-native-svg + react-native-reanimated v4 for animations
 - @tabler/icons-react-native v3.44.0
+- Stripe (payments + Connect for seller payouts)
+- Sendcloud (Royal Mail label generation)
+- Resend (transactional email)
+- exchangerate-api.com (free daily GBP/INR rate)
 
 ---
 
@@ -148,13 +173,13 @@ When a new feature or change is requested, reason about the full system impact f
 | S3 — Auth (register/sign-in + OTP) | `app/(auth)/register.tsx` | Done |
 | S4 — Home feed | `app/(app)/index.tsx` | Done |
 | S5 — Search | `app/(app)/search.tsx` | Done (text search + category/subcategory/occasion/colour/condition/pattern/work/fabric/budget/fits-me filters) |
-| S6 — Listing detail | `app/listing/[id].tsx` | Done |
+| S6 — Listing detail | `app/listing/[id].tsx` | Done (price context panel pending — Phase 2) |
 | S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
 | S11 — Profile | `app/(app)/profile/index.tsx` | Done |
 | S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
-| My listings | `app/(app)/profile/my-listings.tsx` | Done |
-| Transaction screens | `app/transaction/[id]/*` | Stubs |
-| Bank details | `app/(app)/profile/bank-details.tsx` | Stub |
+| S20 — My listings | `app/(app)/profile/my-listings.tsx` | Done (active / sold / removed tabs) |
+| S22–S26 — Transaction screens | `app/transaction/[id]/*` | Stubs — Phase 3 |
+| S19 — Bank details | `app/(app)/profile/bank-details.tsx` | Stub — Phase 7 |
 
 ### Key components
 - `components/listings/ListingCard.tsx` — feed card with press animation (Reanimated v4)
@@ -180,13 +205,6 @@ When a new feature or change is requested, reason about the full system impact f
   -- 2. Copy category structure from Women (gender_id = X) to Kids (gender_id = Y)
   -- Insert matching rows into categories and sub_categories for Kids
   ```
-
-### Pre-existing TypeScript errors (not caused by new code)
-Supabase typed client infers `.insert()` / `.update()` return types as `never` in three files. These are a Supabase type-gen issue, not runtime bugs:
-- `app/(app)/profile/index.tsx` lines ~214, 244, 261
-- `app/_layout.tsx` line ~71
-- `app/list/review.tsx` lines ~295–383
-- `app/list/review.tsx` line ~12: `expo-file-system/next` missing types
 
 ---
 

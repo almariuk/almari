@@ -192,13 +192,17 @@ export default function ListingDetail() {
           <Divider />
 
           {/* Seller row */}
-          <View style={s.sellerRow}>
+          <TouchableOpacity
+            style={s.sellerRow}
+            onPress={() => listing.sellerId && router.push(`/profile/${listing.sellerId}` as any)}
+            activeOpacity={0.7}
+          >
             <IconCandleFilled size={16} color={diyaColour} />
             <Text style={[s.sellerName, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
               {'  '}{listing.sellerName}
             </Text>
             <FireworkTrust score={listing.listingTrustScore} maxScore={maxTrustScore} size={84} />
-          </View>
+          </TouchableOpacity>
 
           {/* Why selling */}
           {listing.whySellingText && (

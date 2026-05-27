@@ -31,6 +31,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
           condition_tiers ( display_text ),
           why_selling_copy:micro_copy!why_selling_copy_id ( display_text ),
           seller:user_identity!seller_id (
+            id,
             first_name,
             last_name_initial,
             user_profile ( trust_score_cached )
@@ -39,7 +40,10 @@ export function useFeedListings(filters: FeedFilters = {}) {
           listing_trust_scores ( total_score )
         `)
         .eq('status', 'active')
-        .order('created_at', { ascending: false })
+        .order(
+          filters.sortBy === 'price_asc' || filters.sortBy === 'price_desc' ? 'asking_price_pence' : 'created_at',
+          { ascending: filters.sortBy === 'price_asc' }
+        )
         .range(offset, offset + PAGE_SIZE - 1)
 
       if (filters.categoryId != null) query = query.eq('category_id', filters.categoryId)
@@ -76,6 +80,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
 
         return {
           id: row.id,
+          sellerId: seller?.id ?? '',
           primaryPhotoUrl: primaryPhoto?.url ?? null,
           sellerName: seller
             ? `${seller.first_name} ${seller.last_name_initial}.`

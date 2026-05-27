@@ -12,6 +12,7 @@ export interface ListingCardMeasurements {
 
 export interface ListingCardData {
   id: string
+  sellerId: string
   primaryPhotoUrl: string | null
   sellerName: string
   sellerTrustScore: number
@@ -36,6 +37,8 @@ export interface FeedItem extends ListingCardData {
   fitLabel: FitLabel
 }
 
+export type SortBy = 'newest' | 'price_asc' | 'price_desc'
+
 export interface FeedFilters {
   categoryId?: number
   subcategoryId?: number
@@ -49,4 +52,5 @@ export interface FeedFilters {
   minPricePence?: number
   maxPricePence?: number
   searchText?: string
+  sortBy?: SortBy
 }

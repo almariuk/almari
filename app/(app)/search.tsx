@@ -8,6 +8,7 @@ import {
   Switch,
   StyleSheet,
 } from 'react-native'
+import type { SortBy } from '@/types/feed'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { useFocusEffect } from 'expo-router'
@@ -142,6 +143,7 @@ export default function Search() {
   const [workTypeId,      setWorkTypeId]      = useState<number | null>(null)
   const [fabricTypeId,    setFabricTypeId]    = useState<number | null>(null)
   const [showMore,        setShowMore]        = useState(false)
+  const [sortBy,          setSortBy]          = useState<SortBy>('newest')
 
   const resetAll = useCallback(() => {
     setTextQuery(''); setDebouncedText('')
@@ -153,6 +155,7 @@ export default function Search() {
     setConditionId(null); setPatternId(null)
     setWorkTypeId(null); setFabricTypeId(null)
     setShowMore(false)
+    setSortBy('newest')
   }, [])
 
   useFocusEffect(useCallback(() => {
@@ -216,6 +219,7 @@ export default function Search() {
     fabricTypeId:    fabricTypeId    ?? undefined,
     minPricePence,
     maxPricePence,
+    sortBy,
   }
 
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch, isFetching } = useFeedListings(filters)
@@ -242,8 +246,30 @@ export default function Search() {
     setSubcategoryId(prev => prev === id ? null : id)
   }
 
+  const SORT_OPTIONS: { key: SortBy; label: string }[] = [
+    { key: 'newest',    label: 'Newest' },
+    { key: 'price_asc', label: 'Price ↑' },
+    { key: 'price_desc',label: 'Price ↓' },
+  ]
+
   const filtersHeader = (
     <View style={s.filtersWrap}>
+
+      {/* Sort */}
+      <View style={s.sortRow}>
+        {SORT_OPTIONS.map(opt => (
+          <TouchableOpacity
+            key={opt.key}
+            onPress={() => setSortBy(opt.key)}
+            style={[s.sortBtn, sortBy === opt.key && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.sortBtnText, { color: sortBy === opt.key ? theme.accent : theme.textSecondary, fontFamily: sortBy === opt.key ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* Category */}
       <FilterLabel text="Category" />
@@ -474,6 +500,10 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     moreBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4 },
     moreBtnText: { fontFamily: 'Inter_500Medium', fontSize: 13 },
+
+    sortRow:     { flexDirection: 'row', paddingHorizontal: 14, gap: 20, paddingBottom: 14, paddingTop: 4 },
+    sortBtn:     { paddingBottom: 6 },
+    sortBtnText: { fontSize: 13 },
 
     resultsDivider: { height: 12 },
   })

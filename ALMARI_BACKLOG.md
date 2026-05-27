@@ -1,15 +1,112 @@
 # Almari — Post Launch Backlog
 
-Everything here is fully designed and agreed. Not building it for launch to keep the build fast and focused. Pick these up in order after launch.
+This document has two sections: pre-launch items (required before TestFlight / App Store) and post-launch backlog (fully designed, not building until after launch). Pick up post-launch items in priority order after the app ships.
+
+---
+
+## Pre-launch integrations (required for launch)
+
+### Stripe — Payment + Connect
+Full payment infrastructure. S12 (checkout) and seller payout setup both depend on this.
+- Stripe payment sheet on S12 — buyer pays, funds held in escrow
+- Stripe Connect onboarding — seller links bank account, flows into S19 bank details screen
+- Escrow release logic — triggered after 48h concern window closes with no concern raised
+- Payout batch — manual via Stripe dashboard at launch, automated post-launch
+
+### Sendcloud — Royal Mail labels
+API integration for label generation on S24 (seller dispatch screen). Seller selects service at listing time, Sendcloud generates label on purchase. Required for sellers to dispatch.
+
+### Exchange rate API — GBP/INR
+Daily rate fetch from exchangerate-api.com. Store rate in DB. Used for price context panel on S6 (original INR price shown as GBP equivalent). Lightweight — one DB row, refresh daily via Edge Function or manual seed at start.
+
+### S6 — Price context panel
+Currently S6 shows listing data only. PRD requires full price context: original INR price + GBP equivalent, current replacement cost (from benchmark_prices table), "selling X% below replacement cost", 4 comparison prices (UK Leicester/Birmingham, UK London, shipped from India, brand new India). Depends on exchange rate API and benchmark_prices seeded.
+
+### S12 — Payment screen
+Checkout UI: order summary (item, postage cost, total), Stripe payment sheet, order confirmation. Buyer-facing. (`app/transaction/new/payment.tsx`)
+
+### S18 — Removal reason screen + removal score
+When a seller removes a listing they must give a reason. Screen has 4 options: changed mind (-2) / sold elsewhere (-5) / mistake (-1) / damaged (0). Score accumulates on seller profile. Warning shown at score 5. Free listing privilege suspended at score 9 for 3 months. Score resets after 3 months. Removal score visible to seller in their profile. (`app/listing/remove/[id].tsx`)
+
+---
+
+## Pre-launch screens to build (required for launch)
+
+### S22 — My Purchases
+Buyer's purchase list accessible from profile. Active / completed tabs. Each row: item photo, name, status pill, date. Taps through to S23.
+
+### S23 — Order detail, buyer view (`app/transaction/[id]/buyer.tsx`)
+- Item summary (photo, name, price paid)
+- Status timeline: Order placed → Dispatched → Delivered → Completed
+- Tracking number + Royal Mail link once dispatched
+- Confirm receipt button (when delivered, before 48h window closes)
+- Raise a concern button (within 48h window, with countdown timer)
+- Concern states shown: raised / upheld / dismissed
+
+### S24 — Order detail, seller view (`app/transaction/[id]/seller.tsx`)
+- Item summary
+- Dispatch instructions: package size, Royal Mail service selected, Sendcloud label link
+- Confirm posted button + tracking number entry
+- Payout status: held / releasing / paid
+
+### S25 — Raise a concern (`app/transaction/[id]/concern.tsx`)
+- Three reasons only: item significantly not as described / set incomplete / suspected vendor listing
+- Confirmation step before submitting
+- Affects seller trust score if upheld
+
+### S26 — Lost in post case (`app/transaction/[id]/lost-in-post.tsx`)
+- Triggered from S23 after nudge (48h silence after delivery ETA)
+- Both parties confirm agreement in-app
+- Almari initiates refund from escrow
+- Case status tracked: open / agreed / refunded
+
+---
+
+### Resend — Transactional emails
+Resend integration for all system-triggered emails. Supabase/Gmail used for OTP only at launch — Resend handles everything else. Emails to send:
+- Order confirmation to buyer (item, price, seller name, estimated dispatch)
+- Dispatch confirmation to buyer (tracking number, Royal Mail service)
+- Delivery confirmation to buyer (confirm receipt or raise concern, 48h window reminder)
+- Concern raised — notification to seller
+- Concern resolved — notification to both parties
+- Payout notification to seller (amount, transaction reference)
+- Lost in post case opened — notification to both parties
+
+### Benchmark prices — manual seed (pre-launch)
+`benchmark_prices` table must be seeded before S6 price context panel can go live. Manual research task (not code). One row per category/subcategory with typical INR prices from Myntra, Ajio, Nalli, Manyavar. Post-launch: monthly scrape to keep fresh. At launch: founder seeds manually from browsing those sites. Minimum viable: Women saree, lehenga, salwar kameez; Men sherwani, kurta pyjama.
+
+### Seller trust score system
+`user_profile.trust_score_cached` already exists. `trust_events` table still needs creating (see DB migrations). Required before launch:
+- Create `trust_events` table (in DB migrations section)
+- Edge Function or DB trigger: processes event, updates `user_profile.trust_score_cached`
+- Events to wire up at launch: email verified, measurements saved, bank details added, first listing, first purchase, sale completed, purchase completed, concern upheld, listing removed changed mind, listing removed sold elsewhere
+- "Three upheld concerns in 90 days" rule: query `trust_events` on concern upheld — if 3 in 90 days, flag for manual review. Founder notified via weekly digest.
 
 ---
 
 ## Pre-launch DB migrations (run in Supabase SQL editor before TestFlight)
 
-### Add `parent_listing_id` to listings
-Enables relist chain — traces a piece across multiple listings over time. Trust signal: "this piece has been on Almari before, properly described and photographed."
+### Already in DB — no migration needed
+`listings.status`, `listings.removal_reason`, `listings.relist_count`, `transactions.status`, `transactions.stripe_payment_intent_id`, `transactions.escrow_status`, all delivery/concern timestamps, `user_profile.trust_score_cached`, `user_profile.removal_score`, `user_profile.free_listing_active/suspended_at/reinstated_at`, `user_profile.stripe_account_id` — all exist.
+
+### Still needed
 ```sql
+ALTER TABLE listings ADD COLUMN reserved_until TIMESTAMPTZ;
 ALTER TABLE listings ADD COLUMN parent_listing_id UUID REFERENCES listings(id);
+ALTER TABLE transactions ADD COLUMN cancellation_reason TEXT
+  CHECK (cancellation_reason IN ('buyer_did_not_pay','seller_did_not_dispatch','mutual_agreement','item_not_as_described','other'));
+```
+
+### Create `trust_events` table
+```sql
+CREATE TABLE trust_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES user_identity(id) NOT NULL,
+    event_type TEXT NOT NULL,
+    score_delta INT NOT NULL,
+    reference_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ### Add `cancellation_reason` to transactions
@@ -35,6 +132,41 @@ GDPR right to erasure. User can delete their account from profile settings.
 
 ## Priority 1 — Add after first 50 users
 
+### Draft listing persistence
+Persist draft to `listings` table with `status: 'draft'` from step 1. On app relaunch, detect existing draft and offer to resume. Replaces Zustand-only in-memory draft. Low priority — listing flow is mostly tap-to-select, losing a draft is a minor inconvenience.
+
+### S18 Removal reason screen + removal score
+When a seller removes a listing they must give a reason. Screen has 4 options: changed mind (+2) / sold elsewhere (+5) / mistake (+1) / damaged (0). Removal score accumulates on seller profile. Warning shown at score 5. Free listing privilege suspended at score 9 for 3 months. Score resets after 3 months. Removal score visible to seller only. (`app/removal-reason.tsx` — stub exists, needs building)
+
+### Favourites / Wishlist
+Buyer hearts a listing to save it. Stored in a `listing_favourites` table (`user_id`, `listing_id`, `created_at`). Accessible from a Saved tab in profile. Seller sees favourite count on their listing ("14 people saved this"). Foundation for price drop alerts.
+
+### Price drop alerts
+Seller reduces asking price → all users who favourited the listing get a push notification and Resend email: "A piece you saved just dropped in price." Requires favourites to exist first.
+
+### Saved searches / alerts
+Buyer saves a search with active filters. Stored in `saved_searches` table. When a new listing is published that matches — push notification sent. Uses existing `search_events` infrastructure. "The burgundy lehenga you were looking for just arrived."
+
+### Seller onboarding completeness nudge
+Profile completeness bar shown on S11. After registration: "Add your measurements (+2 trust), verify bank details (+3 trust), add a profile photo." Each step tappable, shows trust score impact. Re-engagement email sent after 7 days if profile incomplete.
+
+### Pre-purchase listing flag / report
+Flag button on S6 listing detail. Three reasons: fake photos / suspected vendor / offensive content. Goes to founder review queue. Listed separately from post-purchase concerns (S25).
+
+### Deep links
+`almari.uk/listing/[id]` → opens app or falls back to web preview. Expo deep link config + web fallback page on almari.uk. Required before social content generator is useful.
+
+### Dispute resolution process (documented)
+When a concern is raised (S25): seller has 48h to respond via in-app prompt. Founder reviews both sides and decides within 5 working days. Outcome: upheld (buyer refunded, seller trust −10) or dismissed (no action). Both parties notified. Response time SLA shown to buyer on S25.
+
+### Waitlist
+When a listing has an active offer (post-launch, requires negotiation engine):
+- Listing stays visible in search
+- Buy Now button replaced with "Someone is interested in this piece. Join the waitlist."
+- Waitlist count shown publicly e.g. "2 people waiting"
+- When offer expires or is declined — waitlist members notified instantly: "Good news — the piece you were waiting for is available. You're first in the queue."
+- Waitlist position stored in DB per listing. Notification sent via Expo Push + Resend email.
+
 ### Make an Offer + Negotiation Engine
 Buyer makes one offer. Seller accepts, declines, or counters once. Buyer accepts counter or walks. Maximum two rounds. Offers expire after 24 hours.
 
@@ -57,6 +189,9 @@ Buyer sees Almari suggested offer range and slider. Never sees seller's tiers. A
 
 ## Priority 2 — Add after first 100 transactions
 
+### Relisting flow + 3rd relist fee
+When a seller relists a removed or expired listing, increment relist count via `parent_listing_id` chain. On the 3rd relist, charge a small fee (£1) before publishing. Relist count visible to seller only. Fee charged via Stripe. Deters churn without penalising genuine relists.
+
 ### Pricing Intelligence Algorithm
 Every completed sale already writes to pricing_intelligence table from day one. After 100 transactions — build the query layer.
 
@@ -77,6 +212,18 @@ Chain builds across resales. A saree on its third Almari sale has three chapters
 ---
 
 ## Priority 3 — Add after TestFlight feedback
+
+### Push notification triggers
+Expo Push Notifications infrastructure. S17 (notifications screen) shows history. Triggers to implement:
+- Seller: someone bought your listing
+- Seller: dispatch reminder (24h after sale if not dispatched)
+- Buyer: your order has been dispatched (tracking number included)
+- Buyer: your order has been delivered — confirm receipt or raise concern
+- Buyer: 48h concern window closing soon
+- Buyer/Seller: 48h silence after delivery ETA — nudge both parties
+- Waitlist member: listing you were waiting for is available again
+- Seller: concern raised against your listing
+- Both parties: concern resolved
 
 ### Badges and Gamification
 **Sharp seller** — completed 5+ sales, all smooth
@@ -131,6 +278,15 @@ Generous seller badge awarded. Community karma built. Listing still generates pr
 
 ## Priority 5 — Platform maturity
 
+### Biometric login
+Allow returning users to sign in with Face ID / fingerprint. Use `expo-local-authentication` to prompt biometrics, store credentials via `expo-secure-store`. Faster re-entry, better UX for returning users.
+
+### Phone verification
+Add phone number field to profile. Verify via OTP (Supabase phone auth or Twilio). Awards +3 trust score on verification. Required for the trust score ceiling to be reachable.
+
+### Address verification
+Seller confirms their UK address. Used for trust score (+3) and to validate Royal Mail eligibility. Can be lightweight at launch — postcode entry confirmed by seller, not third-party verified. Full verification (Royal Mail PAF lookup) post-scale.
+
 ### Quick List Option
 Minimum viable listing. Photos, category, condition, colour, why selling, one measurement, postage. Live in 3 minutes. Lower trust score shown honestly.
 
@@ -141,7 +297,7 @@ Currently manual via Stripe dashboard. Automate when volume makes manual painful
 
 ### Lost in Post Case Management UI
 Currently: point both parties to Royal Mail directly.
-Post launch: full case UI in S15. Both parties confirm agreement in app. Almari initiates refund. Case status tracked.
+Post launch: full case UI in S26. Both parties confirm agreement in app. Almari initiates refund. Case status tracked.
 
 ### Intelligent Seller Intervention
 Uses private_seller_motivation data captured at listing.
@@ -158,7 +314,7 @@ Requires negotiation engine first.
 Almari evolves beyond peer-to-peer preloved into a full community marketplace ecosystem. Three tiers of seller, clearly distinguished visually at all times. Community trust is the gate to every tier.
 
 ### Tier 1 — Community individual
-Current model. Personal wardrobe. 20 listing cap. Diya trust visual. Free.
+Current model. Personal wardrobe. No hard listing cap (removed from DB — anti-vendor protection via provenance + trust). Diya trust visual. Free.
 
 ### Tier 2 — Community store
 Earned through trust. Bharosa diya or above required. Minimum 20 completed transactions. Zero upheld concerns. Clean removal score.
@@ -311,6 +467,9 @@ Subscription status and seller-type enforcement need daily visibility. Build a s
 
 | Table | Purpose | Depends on |
 |---|---|---|
+| listing_favourites | Buyer saved listings (wishlist) | listings, users |
+| saved_searches | Buyer saved search + filter state | users, search_events |
+| listing_flags | Pre-purchase reports from buyers | listings, users |
 | pricing_tiers | Floor, I'll take it, I want to know per listing | listings, negotiation engine |
 | pricing_intelligence | Every completed sale. The long term asset. | transactions (50+ needed) |
 | provenance_certificates | Generated per transaction. PDF. Immutable chain. | transactions, pdf-lib |
