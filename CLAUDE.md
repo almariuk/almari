@@ -116,6 +116,7 @@ When a new feature or change is requested, reason about the full system impact f
 - Trust score shown as diya/firework visual only, never as a raw number to buyers/sellers
 - Merge all work to main at end of every session — never leave built code on a feature branch
 - At the start of every session read CLAUDE.md, ALMARI_PRD.md and ALMARI_BACKLOG.md before doing anything else
+- Before flagging anything as missing or broken, read the full evidence — git log, all relevant files, and all related hooks/utils. There may be multiple solutions to the same problem (e.g. resize-on-upload vs CDN params). Never jump to a conclusion from one file alone.
 
 ---
 
