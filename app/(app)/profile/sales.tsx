@@ -160,7 +160,7 @@ export default function MySales() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={s.row}
-              onPress={() => router.push(`/transaction/${item.id}` as any)}
+              onPress={() => router.push(`/transaction/${item.id}/seller` as any)}
               activeOpacity={0.7}
             >
               <Image
