@@ -4,117 +4,51 @@ This document has two sections: pre-launch items (required before TestFlight / A
 
 ---
 
-## Pre-launch integrations (required for launch)
+## Pre-launch items (required for launch)
 
-### Stripe — Payment + Connect
-Full payment infrastructure. S12 (checkout) and seller payout setup both depend on this.
-- Stripe payment sheet on S12 — buyer pays, funds held in escrow
-- Stripe Connect onboarding — seller links bank account, flows into S19 bank details screen
-- Escrow release logic — triggered after 48h concern window closes with no concern raised
-- Payout batch — manual via Stripe dashboard at launch, automated post-launch
-
-### Sendcloud — Royal Mail labels
-API integration for label generation on S24 (seller dispatch screen). Seller selects service at listing time, Sendcloud generates label on purchase. Required for sellers to dispatch.
-
-### Exchange rate API — GBP/INR
-Daily rate fetch from exchangerate-api.com. Store rate in DB. Used for price context panel on S6 (original INR price shown as GBP equivalent). Lightweight — one DB row, refresh daily via Edge Function or manual seed at start.
-
-### S6 — Price context panel
-Currently S6 shows listing data only. PRD requires full price context: original INR price + GBP equivalent, current replacement cost (from benchmark_prices table), "selling X% below replacement cost", 4 comparison prices (UK Leicester/Birmingham, UK London, shipped from India, brand new India). Depends on exchange rate API and benchmark_prices seeded.
-
-### S12 — Payment screen
-Checkout UI: order summary (item, postage cost, total), Stripe payment sheet, order confirmation. Buyer-facing. (`app/transaction/new/payment.tsx`)
+### Offline payment model — DONE
+Launch without Stripe or Sendcloud. Buyers pay sellers directly using PayPal/Revolut/bank transfer. Sellers arrange their own postage and enter tracking manually. Stripe + Sendcloud slot in post-launch as drop-in replacements — the DB schema, status machine, and screen flows are identical.
 
 ### S18 — Removal reason screen + removal score
 When a seller removes a listing they must give a reason. Screen has 4 options: changed mind (-2) / sold elsewhere (-5) / mistake (-1) / damaged (0). Score accumulates on seller profile. Warning shown at score 5. Free listing privilege suspended at score 9 for 3 months. Score resets after 3 months. Removal score visible to seller in their profile. (`app/listing/remove/[id].tsx`)
 
----
+### S22 — My Purchases — DONE
+`app/(app)/profile/purchases.tsx`. Active / Done tabs. Taps through to S23 buyer view.
 
-## Pre-launch screens to build (required for launch)
+### S22 — My Sales — DONE
+`app/(app)/profile/sales.tsx`. New / In progress / Done tabs. Taps through to S24 seller view.
 
-### S22 — My Purchases
-Buyer's purchase list accessible from profile. Active / completed tabs. Each row: item photo, name, status pill, date. Taps through to S23.
+### S23 — Order detail, buyer view — DONE (`app/transaction/[id]/buyer.tsx`)
+Status timeline, payment reminder (pending_payment), tracking (dispatched), confirm received (opens 48h concern window), raise a concern nav.
 
-### S23 — Order detail, buyer view (`app/transaction/[id]/buyer.tsx`)
-- Item summary (photo, name, price paid)
-- Status timeline: Order placed → Dispatched → Delivered → Completed
-- Tracking number + Royal Mail link once dispatched
-- Confirm receipt button (when delivered, before 48h window closes)
-- Raise a concern button (within 48h window, with countdown timer)
-- Concern states shown: raised / upheld / dismissed
+### S24 — Order detail, seller view — DONE (`app/transaction/[id]/seller.tsx`)
+Confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed/refunded states.
 
-### S24 — Order detail, seller view (`app/transaction/[id]/seller.tsx`)
-- Item summary
-- Dispatch instructions: package size, Royal Mail service selected, Sendcloud label link
-- Confirm posted button + tracking number entry
-- Payout status: held / releasing / paid
-
-### S25 — Raise a concern (`app/transaction/[id]/concern.tsx`)
-- Three reasons only: item significantly not as described / set incomplete / suspected vendor listing
+### S25 — Raise a concern (`app/transaction/[id]/concern.tsx`) — stub, Step 7
+- Three reasons: item significantly not as described / item not received / other
 - Confirmation step before submitting
+- Sets status → `concern_open`, emails atulblal@gmail.com with details
 - Affects seller trust score if upheld
 
-### S26 — Lost in post case (`app/transaction/[id]/lost-in-post.tsx`)
-- Triggered from S23 after nudge (48h silence after delivery ETA)
-- Both parties confirm agreement in-app
-- Almari initiates refund from escrow
-- Case status tracked: open / agreed / refunded
+### S26 — Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — stub, Step 8
+- Both parties confirm in-app
+- Sets status → `refunded`
+- Almari manually refunds buyer, no Stripe escrow at launch
+
+### Trust score events — Step 9
+Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manual by Almari): seller −10. Requires `trust_events` table (already in DB).
 
 ---
 
-### Resend — Transactional emails
-Resend integration for all system-triggered emails. Supabase/Gmail used for OTP only at launch — Resend handles everything else. Emails to send:
-- Order confirmation to buyer (item, price, seller name, estimated dispatch)
-- Dispatch confirmation to buyer (tracking number, Royal Mail service)
-- Delivery confirmation to buyer (confirm receipt or raise concern, 48h window reminder)
-- Concern raised — notification to seller
-- Concern resolved — notification to both parties
-- Payout notification to seller (amount, transaction reference)
-- Lost in post case opened — notification to both parties
+## Pre-launch DB migrations — ALL DONE
 
-### Benchmark prices — manual seed (pre-launch)
-`benchmark_prices` table must be seeded before S6 price context panel can go live. Manual research task (not code). One row per category/subcategory with typical INR prices from Myntra, Ajio, Nalli, Manyavar. Post-launch: monthly scrape to keep fresh. At launch: founder seeds manually from browsing those sites. Minimum viable: Women saree, lehenga, salwar kameez; Men sherwani, kurta pyjama.
-
-### Seller trust score system
-`user_profile.trust_score_cached` already exists. `trust_events` table still needs creating (see DB migrations). Required before launch:
-- Create `trust_events` table (in DB migrations section)
-- Edge Function or DB trigger: processes event, updates `user_profile.trust_score_cached`
-- Events to wire up at launch: email verified, measurements saved, bank details added, first listing, first purchase, sale completed, purchase completed, concern upheld, listing removed changed mind, listing removed sold elsewhere
-- "Three upheld concerns in 90 days" rule: query `trust_events` on concern upheld — if 3 in 90 days, flag for manual review. Founder notified via weekly digest.
-
----
-
-## Pre-launch DB migrations (run in Supabase SQL editor before TestFlight)
-
-### Already in DB — no migration needed
-`listings.status`, `listings.removal_reason`, `listings.relist_count`, `transactions.status`, `transactions.stripe_payment_intent_id`, `transactions.escrow_status`, all delivery/concern timestamps, `user_profile.trust_score_cached`, `user_profile.removal_score`, `user_profile.free_listing_active/suspended_at/reinstated_at`, `user_profile.stripe_account_id` — all exist.
-
-### Still needed
-```sql
-ALTER TABLE listings ADD COLUMN reserved_until TIMESTAMPTZ;
-ALTER TABLE listings ADD COLUMN parent_listing_id UUID REFERENCES listings(id);
-ALTER TABLE transactions ADD COLUMN cancellation_reason TEXT
-  CHECK (cancellation_reason IN ('buyer_did_not_pay','seller_did_not_dispatch','mutual_agreement','item_not_as_described','other'));
-```
-
-### Create `trust_events` table
-```sql
-CREATE TABLE trust_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES user_identity(id) NOT NULL,
-    event_type TEXT NOT NULL,
-    score_delta INT NOT NULL,
-    reference_id UUID,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Add `cancellation_reason` to transactions
-Required for analytics on failed sales and seller/buyer trust scoring.
-```sql
-ALTER TABLE transactions ADD COLUMN cancellation_reason TEXT
-  CHECK (cancellation_reason IN ('buyer_did_not_pay','seller_did_not_dispatch','mutual_agreement','item_not_as_described','other'));
-```
+All required columns exist in the DB. Run this session or previously:
+- `listings.reserved_until`, `listings.parent_listing_id` ✅
+- `transactions.cancellation_reason`, `transactions.payment_reference`, `transactions.concern_raised_at`, `transactions.concern_reason`, `transactions.buyer_lost_confirmed_at`, `transactions.seller_lost_confirmed_at` ✅
+- `user_profile.payment_instructions` ✅
+- `trust_events` table ✅
+- RLS policies on transactions (buyer/seller read, buyer insert, buyer/seller update) ✅
+- DB trigger `trg_reserve_listing` — auto-reserves listing on transaction insert ✅
 
 ---
 

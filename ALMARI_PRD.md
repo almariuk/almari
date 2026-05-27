@@ -282,15 +282,14 @@ When offer is active on a listing:
 ### Transaction statuses
 | Status | Description |
 |---|---|
-| `pending_payment` | Buyer initiated checkout, Stripe payment not yet confirmed. |
-| `payment_failed` | Stripe payment failed — listing returns to `active`. |
-| `paid` | Payment confirmed. Funds held in escrow. |
+| `pending_payment` | Buyer placed order, payment reference issued. Awaiting offline transfer. |
+| `paid` | Seller confirmed payment received. |
 | `dispatched` | Seller confirmed posted, tracking number entered. |
-| `delivered` | Tracking confirmed delivered OR buyer tapped confirm receipt. |
+| `delivered` | Buyer confirmed receipt. 48h concern window opens. |
 | `concern_open` | Buyer raised concern within 48h window. |
-| `concern_resolved` | Concern upheld or dismissed. |
-| `completed` | 48h window closed with no concern, or concern dismissed. Funds released. |
-| `refunded` | Concern upheld or lost in post confirmed. Buyer refunded from escrow. |
+| `concern_resolved` | Concern upheld or dismissed by Almari. |
+| `completed` | 48h window closed with no concern, or concern dismissed. Payout due. |
+| `refunded` | Concern upheld or lost in post confirmed by both parties. Manual Almari refund. |
 | `cancelled` | Cancelled before dispatch (e.g. seller unable to fulfil). |
 
 ### Listing expiry
@@ -298,14 +297,16 @@ Listings do not expire. A piece of Indian ethnic wear may take months to find it
 
 ---
 
-## Delivery and Escrow Flow
-Buy Now tapped → listing status set to `reserved` (10 min TTL) → payment taken → listing status `sold`, transaction status `paid` → held in Stripe escrow → seller dispatches → transaction status `dispatched` → tracking confirmed delivered OR buyer confirms receipt → transaction status `delivered` → 48 hour concern window → no concern → transaction status `completed`, funds released → daily 2pm payout batch.
+## Delivery Flow (offline payment model at launch)
+Buy Now tapped → transaction created (`pending_payment`), payment reference `ALM-XXXXX` issued, listing status `reserved` (DB trigger) → buyer transfers funds offline (PayPal/Revolut/bank transfer) using reference → seller confirms payment received → `paid` → seller posts item, enters tracking number → `dispatched` → buyer confirms receipt → `delivered`, 48h concern window opens → no concern → `completed`, Almari manually settles payout → seller receives funds.
 
-Payment fails or times out → listing status returns to `active`.
+If no concern raised within 48h window → `completed`. Almari pays seller within 48h.
 
-If tracking not updated 48 hours after ETA → nudge both parties.
-5 days silence after nudge → message to buyer: sorry, you can open a lost in post case.
-Lost in post case → both parties agree → seller claims Royal Mail directly → Almari refunds buyer from escrow → transaction status `refunded`.
+If tracking not updated 5 days after dispatch → nudge both parties.
+No response after nudge → buyer can open a lost in post case.
+Lost in post case → both parties confirm in-app → transaction status `refunded`, Almari manually refunds buyer.
+
+**Post-launch (Phase 3):** Stripe replaces offline transfer. Sendcloud generates Royal Mail labels. Escrow automates payout. Flow is identical — only the payment step changes.
 
 ---
 
