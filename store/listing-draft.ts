@@ -50,10 +50,6 @@ interface ListingDraftData {
   // Step 2 — Additional notes
   additionalNotes: string;
 
-  // Step 2 — Postage
-  packageBandId: number | null;
-  postageServiceId: number | null;
-
   // Step 3 — Pricing
   askingPricePence: number | null;
 
@@ -105,9 +101,6 @@ interface ListingDraftActions {
   setIsSetComplete: (v: boolean | null) => void;
   // Step 2 — Additional notes
   setAdditionalNotes: (v: string) => void;
-  // Step 2 — Postage
-  setPackageBandId: (id: number | null) => void;
-  setPostageServiceId: (id: number | null) => void;
   // Step 3 — Pricing
   setAskingPricePence: (pence: number | null) => void;
   // Review
@@ -155,8 +148,6 @@ const initialData: ListingDraftData = {
   whatIsIncluded: '',
   isSetComplete: null,
   additionalNotes: '',
-  packageBandId: null,
-  postageServiceId: null,
   askingPricePence: null,
   listingId: null,
 };
@@ -226,11 +217,6 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
 
   // Step 2 — Additional notes
   setAdditionalNotes: (v) => set({ additionalNotes: v }),
-
-  // Step 2 — Postage
-  // Changing band invalidates any previously selected service
-  setPackageBandId: (id) => set({ packageBandId: id, postageServiceId: null }),
-  setPostageServiceId: (id) => set({ postageServiceId: id }),
 
   // Step 3 — Pricing
   setAskingPricePence: (pence) => set({ askingPricePence: pence }),

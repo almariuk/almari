@@ -19,9 +19,6 @@ import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { useListingDraftStore } from '@/store/listing-draft';
 import type {
-  PackageBandRow,
-  PostagePriceRow,
-  PostageServiceRow,
   ProvenanceAreaRow,
   ProvenanceCityRow,
   SellerTypeRow,
@@ -66,39 +63,6 @@ export default function ListStep2() {
     staleTime: 60 * 60 * 1000,
   });
 
-  const { data: packageBands = [], isLoading: loadingBands } = useQuery<PackageBandRow[]>({
-    queryKey: ['package_bands'],
-    queryFn: async () => {
-      const { data } = await supabase.from('package_bands').select('*');
-      return (data ?? []) as PackageBandRow[];
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-
-  const { data: postageServices = [] } = useQuery<PostageServiceRow[]>({
-    queryKey: ['postage_services'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('postage_services')
-        .select('*')
-        .eq('is_active', true);
-      return (data ?? []) as PostageServiceRow[];
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-
-  const { data: allPostagePrices = [] } = useQuery<PostagePriceRow[]>({
-    queryKey: ['postage_prices'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('postage_prices')
-        .select('*')
-        .is('effective_to', null);
-      return (data ?? []) as PostagePriceRow[];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: selectedCategory } = useQuery<{ category_type: string } | null>({
     queryKey: ['category_type', draft.categoryId],
     enabled: draft.categoryId !== null,
@@ -119,14 +83,7 @@ export default function ListStep2() {
 
   const areas = allAreas.filter((a) => a.city_id === draft.provenanceCityId);
   const pricePrefix = draft.originalPriceCurrency === 'GBP' ? '£' : '₹';
-  const bandPrices = allPostagePrices.filter((p) => p.band_id === draft.packageBandId);
-
-  const canProceed = draft.packageBandId !== null && draft.postageServiceId !== null;
-
-  // ── Helpers ───────────────────────────────────────────────────
-
-  const pence = (p: number) => `£${(p / 100).toFixed(2)}`;
-  const compensation = (p: number) => `£${Math.floor(p / 100).toLocaleString()}`;
+  const canProceed = true;
 
   return (
     <SafeAreaView style={s.root}>
@@ -643,99 +600,21 @@ export default function ListStep2() {
             />
           </View>
 
-          {/* ── Postage ───────────────────────────────────────── */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>
-              Postage <Text style={{ color: theme.error }}>*</Text>
+          {/* ── Postage hint ─────────────────────────────────── */}
+          <View style={[s.postageHint, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[s.postageHintTitle, { color: theme.text }]}>Postage is your cost</Text>
+            <Text style={[s.postageHintBody, { color: theme.textSecondary }]}>
+              Factor it into your asking price. Royal Mail estimates:
             </Text>
-            <Text style={[s.hint, { color: theme.textDisabled }]}>
-              Royal Mail only. Your buyer pays the postage cost shown.
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Small (dupatta, kurta): £3.65–£4.65
             </Text>
-
-            {/* Package band */}
-            <Text style={[s.subSectionLabel, { color: theme.textSecondary, marginBottom: 8 }]}>
-              Package size and weight
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Medium (saree, salwar set): £5.55–£8.55
             </Text>
-            {loadingBands ? (
-              <ActivityIndicator size="small" color={theme.accent} style={s.loader} />
-            ) : (
-              packageBands.map((band) => {
-                const selected = draft.packageBandId === band.id;
-                return (
-                  <TouchableOpacity
-                    key={band.id}
-                    style={[
-                      s.card,
-                      { borderColor: selected ? theme.accent : theme.border },
-                      selected && { backgroundColor: theme.accentSubtle },
-                    ]}
-                    onPress={() => draft.setPackageBandId(selected ? null : band.id)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[s.cardTitle, { color: selected ? theme.accent : theme.text }]}>
-                      {band.size_label} — {band.weight_label}
-                    </Text>
-                    <Text style={[s.cardBody, { color: theme.textSecondary }]}>
-                      {band.size_description} · {band.weight_description}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })
-            )}
-
-            {/* Postage service — shown after band selected */}
-            {draft.packageBandId !== null && (
-              <View style={{ marginTop: 16 }}>
-                <Text
-                  style={[s.subSectionLabel, { color: theme.textSecondary, marginBottom: 8 }]}
-                >
-                  Choose a service
-                </Text>
-                {bandPrices.length === 0 ? (
-                  <Text style={[s.hint, { color: theme.textDisabled }]}>
-                    No services available for this package size. Please select another.
-                  </Text>
-                ) : (
-                  bandPrices.map((pp) => {
-                    const svc = postageServices.find((s) => s.id === pp.service_id);
-                    if (!svc) return null;
-                    const selected = draft.postageServiceId === svc.id;
-                    return (
-                      <TouchableOpacity
-                        key={svc.id}
-                        style={[
-                          s.card,
-                          { borderColor: selected ? theme.accent : theme.border },
-                          selected && { backgroundColor: theme.accentSubtle },
-                        ]}
-                        onPress={() => draft.setPostageServiceId(selected ? null : svc.id)}
-                        activeOpacity={0.85}
-                      >
-                        <View style={s.serviceCardHeader}>
-                          <Text
-                            style={[
-                              s.cardTitle,
-                              { color: selected ? theme.accent : theme.text, flex: 1 },
-                            ]}
-                          >
-                            {svc.name}
-                          </Text>
-                          <Text style={[s.priceText, { color: theme.accent }]}>
-                            {pence(pp.price_pence)}
-                          </Text>
-                        </View>
-                        <Text style={[s.cardBody, { color: theme.textSecondary }]}>
-                          {svc.description}
-                        </Text>
-                        <Text style={[s.compensationText, { color: theme.textDisabled }]}>
-                          Up to {compensation(svc.max_compensation_pence)} compensation
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
-              </View>
-            )}
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Large (lehenga, sherwani): £11.95–£16.15
+            </Text>
           </View>
 
           {/* ── Next ────────────────────────────────────────────── */}
@@ -892,37 +771,28 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       gap: 10,
     },
 
-    card: {
+    postageHint: {
       borderWidth: 1.5,
       borderRadius: 12,
-      padding: 14,
-      marginBottom: 8,
+      padding: 16,
+      marginBottom: 28,
+      gap: 4,
     },
-    cardTitle: {
+    postageHintTitle: {
       fontFamily: 'Inter_500Medium',
-      fontSize: 14,
+      fontSize: 13,
       marginBottom: 4,
     },
-    cardBody: {
+    postageHintBody: {
       fontFamily: 'Inter_400Regular',
       fontSize: 12,
       lineHeight: 17,
-    },
-
-    serviceCardHeader: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 8,
       marginBottom: 4,
     },
-    priceText: {
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 15,
-    },
-    compensationText: {
+    postageHintPrices: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 11,
-      marginTop: 4,
+      fontSize: 12,
+      lineHeight: 19,
     },
 
     nextBtn: {

@@ -9,6 +9,11 @@
 
 Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Use the personal access token with `npx supabase` CLI or the Management API (`https://api.supabase.com/v1/projects/smvyzzwzzrnznazygyqt/...`). Never write these to a file on disk — pass inline in curl commands.
 
+## Phase 3 reminder — postage restoration
+When Stripe + Sendcloud are added (Phase 3), restore the full postage selection flow (package band picker, service cards, underinsured warning, postage price on listing/confirm/order detail). The complete pre-simplification implementation is tagged in git: **`pre-postage-simplification`** (commit 7c28f91). Reference those 8 files: `store/listing-draft.ts`, `app/list/step-2.tsx`, `app/list/review.tsx`, `hooks/useListingDetail.ts`, `types/listing-detail.ts`, `app/listing/[id].tsx`, `app/transaction/new/confirm.tsx`, `app/transaction/[id]/buyer.tsx` + `seller.tsx`.
+
+---
+
 ## Tonight's task list
 
 All done. Focus is now Phase 1 — Get to TestFlight.

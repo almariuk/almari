@@ -13,7 +13,7 @@ export function useListingDetail(id: string) {
         .from('listings')
         .select(`
           id, status, reserved_until, negotiation_active, waitlist_count,
-          asking_price_pence, postage_price_pence,
+          asking_price_pence,
           additional_notes, set_contents, set_complete,
           listing_photos ( url, display_order ),
           subcategories ( name, categories ( category_type ) ),
@@ -32,7 +32,6 @@ export function useListingDetail(id: string) {
           ),
           listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
           listing_trust_scores ( total_score ),
-          postage_services ( name ),
           provenance (
             purchase_year, original_price_inr, original_price_approximate,
             is_heirloom, heirloom_story,
@@ -66,8 +65,6 @@ export function useListingDetail(id: string) {
         negotiationActive: row.negotiation_active ?? false,
         waitlistCount: row.waitlist_count ?? 0,
         askingPricePence: row.asking_price_pence,
-        postagePricePence: row.postage_price_pence,
-        postageServiceName: row.postage_services?.name ?? null,
         additionalNotes: row.additional_notes ?? null,
         setContents: row.set_contents ?? null,
         setComplete: row.set_complete ?? null,

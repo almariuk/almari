@@ -14,7 +14,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { IconChevronLeft, IconAlertTriangle } from '@tabler/icons-react-native';
+import { IconChevronLeft } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { useListingDraftStore } from '@/store/listing-draft';
@@ -34,9 +34,6 @@ import type {
   ProvenanceCityRow,
   ProvenanceAreaRow,
   SellerTypeRow,
-  PackageBandRow,
-  PostageServiceRow,
-  PostagePriceRow,
 } from '@/types/database';
 
 import { computeTrust, getStateLabel } from '@/utils/trust';
@@ -211,33 +208,6 @@ export default function ListReview() {
     staleTime: 60 * 60 * 1000,
   });
 
-  const { data: packageBands = [] } = useQuery<PackageBandRow[]>({
-    queryKey: ['package_bands'],
-    queryFn: async () => {
-      const { data } = await supabase.from('package_bands').select('*');
-      return (data ?? []) as PackageBandRow[];
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-
-  const { data: postageServices = [] } = useQuery<PostageServiceRow[]>({
-    queryKey: ['postage_services'],
-    queryFn: async () => {
-      const { data } = await supabase.from('postage_services').select('*').eq('is_active', true);
-      return (data ?? []) as PostageServiceRow[];
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-
-  const { data: postagePrices = [] } = useQuery<PostagePriceRow[]>({
-    queryKey: ['postage_prices'],
-    queryFn: async () => {
-      const { data } = await supabase.from('postage_prices').select('*').is('effective_to', null);
-      return (data ?? []) as PostagePriceRow[];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   // ── Derived display values ────────────────────────────────────
 
   const category = categories.find((c: CategoryRow) => c.id === draft.categoryId);
@@ -252,16 +222,6 @@ export default function ListReview() {
   const city = cities.find((c: ProvenanceCityRow) => c.id === draft.provenanceCityId);
   const area = allAreas.find((a: ProvenanceAreaRow) => a.id === draft.provenanceAreaId);
   const sellerType = sellerTypes.find((s: SellerTypeRow) => s.id === draft.sellerTypeId);
-  const band = packageBands.find((b: PackageBandRow) => b.id === draft.packageBandId);
-  const service = postageServices.find((s: PostageServiceRow) => s.id === draft.postageServiceId);
-  const postagePrice = postagePrices.find(
-    (p: PostagePriceRow) => p.band_id === draft.packageBandId && p.service_id === draft.postageServiceId,
-  );
-
-  const underinsured =
-    draft.askingPricePence !== null &&
-    service !== undefined &&
-    draft.askingPricePence > service.max_compensation_pence;
 
   // ── Trust score ───────────────────────────────────────────────
 
@@ -317,10 +277,6 @@ export default function ListReview() {
           set_complete: draft.isSetComplete,
           additional_notes: draft.additionalNotes.trim() || null,
           asking_price_pence: draft.askingPricePence,
-          package_band_id: draft.packageBandId,
-          postage_service_id: draft.postageServiceId,
-          postage_price_pence: postagePrice?.price_pence ?? null,
-          underinsured_warning_shown: underinsured,
           status: 'active',
           listing_type: 'standard',
         })
@@ -588,39 +544,13 @@ export default function ListReview() {
           </View>
         )}
 
-        {/* Postage */}
-        <View style={s.card}>
-          <Text style={s.cardTitle}>Postage</Text>
-          {band && <Row label="Package" value={`${band.size_label} — ${band.weight_label}`} />}
-          {service && <Row label="Service" value={service.name} />}
-          {postagePrice && <Row label="Postage cost" value={pence(postagePrice.price_pence)} />}
-          {service && (
-            <Row
-              label="Compensation"
-              value={`Up to £${Math.floor(service.max_compensation_pence / 100).toLocaleString()}`}
-            />
-          )}
-        </View>
-
-        {/* Underinsured warning */}
-        {underinsured && service && (
-          <View style={[s.warningBanner, { borderColor: theme.error, backgroundColor: theme.error + '18' }]}>
-            <IconAlertTriangle size={18} color={theme.error} />
-            <Text style={[s.warningText, { color: theme.error }]}>
-              Your asking price ({pence(draft.askingPricePence!)}) exceeds Royal Mail's compensation
-              limit of £{Math.floor(service.max_compensation_pence / 100).toLocaleString()} for this
-              service. Consider upgrading your postage service or reducing your asking price.
-            </Text>
-          </View>
-        )}
-
         {/* Asking price */}
         <View style={[s.card, s.priceCard]}>
           <Text style={s.priceCardLabel}>Asking price</Text>
           <Text style={s.priceCardValue}>
             {draft.askingPricePence !== null ? pence(draft.askingPricePence) : '—'}
           </Text>
-          <Text style={s.priceCardNote}>Buyers pay this. Postage is added at checkout.</Text>
+          <Text style={s.priceCardNote}>Postage is your cost — factor it into this price.</Text>
         </View>
 
         {/* Error */}
