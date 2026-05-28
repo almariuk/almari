@@ -216,6 +216,7 @@ When a new feature or change is requested, reason about the full system impact f
 ## Known bugs / DB tasks outstanding
 
 ### Outstanding pre-launch items
+- **CRASH: Listing detail — Rules of Hooks violation** — `app/listing/[id].tsx` lines 160–168: `useState` + `useEffect` for the reservation countdown are placed after the `if (isLoading)` and `if (error || !listing)` early returns. React detects a different hook count between renders (8 hooks while loading, 10 once data arrives) and crashes. Fix: move both hooks to the top of the component before any early return. Introduced in commit `60e8918`.
 - **S25 Raise a concern** — `app/transaction/[id]/concern.tsx` is a stub. 3 permitted grounds, confirmation step, sets status → `concern_open`, emails atulblal@gmail.com.
 - **S26 Lost in post** — `app/transaction/[id]/lost-in-post.tsx` is a stub. Both parties confirm, status → `refunded`.
 - **Step 9: Trust events** — sale completed (+5), purchase completed (+3), concern upheld (−10). No trust_events rows written yet.
