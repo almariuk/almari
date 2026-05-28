@@ -27,8 +27,8 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 
 ### Founder actions (not code)
 - [ ] ICO registration — £40/year at ico.org.uk. Strictly required when processing personal data commercially. Pre-revenue with a small community may qualify for the £0 not-for-profit tier. Revisit when fees are introduced or user base grows materially.
-- [ ] Privacy Policy — use Termly, customise data collection section to mention measurements, listing photos, provenance data. Host at almari.uk/privacy.
-- [ ] T&Cs — founder-written based on PRD. All sales final, C2C platform, no consumer return rights, lost in post process. Host at almari.uk/terms. Solicitor review when first revenue arrives.
+- [x] Privacy Policy — written for offline model, live at almari.uk/privacy. Stripe-era version backed up at docs/stripe-era/privacy.html.
+- [x] T&Cs — written for offline model, live at almari.uk/terms. Solicitor review when first revenue arrives. Stripe-era version backed up at docs/stripe-era/terms.html.
 - [ ] Apple Developer account — $99/year. Required for TestFlight and App Store submission.
 - [ ] Google Play Developer account — $25 one-time. Required for Play Store.
 
@@ -68,15 +68,15 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [x] L6: Sort options on S5 search — done. Sort bar: Newest / Price ↑ / Price ↓. `SortBy` type + `sortBy` filter in `useFeedListings`.
 
 ### Phase 6 — Kids measurement architecture
-- [ ] K1: Add `category_type TEXT ('women'|'men'|'kids')` to `categories` table + set values (DB migration — needs Supabase SQL editor)
-- [ ] K2: Add `age_from_years, age_to_years, height_from_cm, height_to_cm` to `listing_measurements` (DB migration)
+- [x] K1: Add `category_type TEXT ('women'|'men'|'kids')` to `categories` table + set values — done via Management API
+- [x] K2: Add `age_from_years, age_to_years, height_from_cm, height_to_cm` to `listing_measurements` — done via Management API
 - [ ] K3: Create `user_measurement_profiles` table (DB migration — see architecture notes below)
-- [ ] K4: Listing Step 2 — kids-aware measurement section (age range + height when Kids category selected)
-- [ ] K5: Add kids measurement fields to draft store
+- [x] K4: Listing Step 2 — kids-aware measurement section (age range + height when Kids category selected)
+- [x] K5: Add kids measurement fields to draft store
 - [ ] K6: S21 rebuild as family profile manager — add/edit/delete profiles, adult + kids form modes, auto-migrate existing `user_profile` measurements to "Me" profile on first visit
 - [ ] K7: Fits Me profile picker — "Shopping for: Me ▾" in home feed + search. Active profile in Zustand.
 - [ ] K8: Update `utils/fit.ts` — kids fit logic. Labels: Fits now / Nearly there / Different size
-- [ ] K9: Kids measurement display on listing detail
+- [x] K9 (partial): Kids listing detail shows "Size & age" with age range + height range. Full K9 (fit labels) needs K3/K6/K7/K8.
 
 ### Phase 7 — Profile completeness + polish
 - [x] PR2: Payment details screen — `app/(app)/profile/bank-details.tsx` done. Seller enters PayPal/Revolut/bank details (offline model). Stripe Connect replaces this in Phase 3.
@@ -88,7 +88,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 
 ## Architecture decisions (agreed 26 May 2025)
 
-**Kids categories:** Split into Kids - Girls (id:3) and Kids - Boys (id:4). Done in DB. `category_type` column to be added so app branches on this, never on name strings.
+**Kids categories:** Split into Kids - Girls (id:3) and Kids - Boys (id:4). Done in DB. `category_type` column added and seeded — `women`/`men`/`kids`. App branches on `category_type`, never on name strings.
 
 **Family measurement profiles:** New `user_measurement_profiles` table. Kids profiles: `age_years + height_cm`. Adult profiles: `bust/waist/hips/height`. Schema:
 ```sql
@@ -178,10 +178,10 @@ When a new feature or change is requested, reason about the full system impact f
 | S3 — Auth (register/sign-in + OTP) | `app/(auth)/register.tsx` | Done |
 | S4 — Home feed | `app/(app)/index.tsx` | Done |
 | S5 — Search | `app/(app)/search.tsx` | Done (text search + category/subcategory/occasion/colour/condition/pattern/work/fabric/budget/fits-me filters) |
-| S6 — Listing detail | `app/listing/[id].tsx` | Done (seller row tappable → S27; price context panel post-launch) |
-| S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
+| S6 — Listing detail | `app/listing/[id].tsx` | Done (seller row tappable → S27; kids listings show age/height range; 20-min reservation countdown when reserved; price context panel post-launch) |
+| S7–S10 — Listing flow (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done (Step 2 kids-aware: shows age/height fields for kids categories) |
 | S11 — Profile | `app/(app)/profile/index.tsx` | Done (KPI row at top: Listings / Purchases / Sales with live counts) |
-| S19 — Payment details | `app/(app)/profile/bank-details.tsx` | Done (offline model — PayPal/Revolut/bank transfer free text) |
+| S19 — Payment details | `app/(app)/profile/bank-details.tsx` | Done (offline model — PayPal email/username + Revolut username, stored as JSON in `payment_instructions`. Strong F&F hint.) |
 | S20 — My listings | `app/(app)/profile/my-listings.tsx` | Done (active / sold / removed tabs) |
 | S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
 | S22 — My Purchases | `app/(app)/profile/purchases.tsx` | Done (Active / Done tabs) |
@@ -189,7 +189,7 @@ When a new feature or change is requested, reason about the full system impact f
 | S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, confirm received, raise concern nav) |
 | S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
 | Order confirm | `app/transaction/new/confirm.tsx` | Done (item summary + price, "Place order" creates transaction) |
-| Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (shown after Place order) |
+| Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (PayPal + Revolut details, 20-min countdown, scarcity copy, F&F instruction box) |
 | S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Stub — Step 7 |
 | S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Stub — Step 8 |
 | S27 — Seller public profile | `app/profile/[id].tsx` | Done (diya, member since, listings grid) |
@@ -210,14 +210,12 @@ When a new feature or change is requested, reason about the full system impact f
 
 ## Known bugs / DB tasks outstanding
 
-### DB seed needed
-- **Kids categories**: `categories` and `sub_categories` tables have no rows for the Kids gender. Replicate the Women/Men structure. Run in Supabase SQL editor:
-  ```sql
-  -- 1. Find the Kids gender ID
-  SELECT id, name FROM genders WHERE name = 'Kids';
-  -- 2. Copy category structure from Women (gender_id = X) to Kids (gender_id = Y)
-  -- Insert matching rows into categories and sub_categories for Kids
-  ```
+### Outstanding pre-launch items
+- **S25 Raise a concern** — `app/transaction/[id]/concern.tsx` is a stub. 3 permitted grounds, confirmation step, sets status → `concern_open`, emails atulblal@gmail.com.
+- **S26 Lost in post** — `app/transaction/[id]/lost-in-post.tsx` is a stub. Both parties confirm, status → `refunded`.
+- **Step 9: Trust events** — sale completed (+5), purchase completed (+3), concern upheld (−10). No trust_events rows written yet.
+- **Buy Now guard** — disable Buy Now if seller has no payment details set (`payment_instructions IS NULL`).
+- **GDPR delete account** — required before App Store submission.
 
 ---
 
