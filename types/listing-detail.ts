@@ -31,8 +31,6 @@ export interface ListingDetail {
   negotiationActive: boolean
   waitlistCount: number
   askingPricePence: number | null
-  postagePricePence: number | null
-  postageServiceName: string | null
   additionalNotes: string | null
   setContents: string | null
   setComplete: boolean | null

@@ -230,8 +230,6 @@ export default function BuyerOrderDetail() {
     )
   }
 
-  const hasPostage = (order.postagePricePence ?? 0) > 0
-
   return (
     <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
       {/* Nav */}
@@ -270,17 +268,6 @@ export default function BuyerOrderDetail() {
               </Text>
             </View>
           </View>
-          <View style={[s.divider, { backgroundColor: theme.border }]} />
-          <View style={s.priceRow}>
-            <Text style={[s.priceLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Item</Text>
-            <Text style={[s.priceValue, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>{formatGbp(order.salePricePence)}</Text>
-          </View>
-          {hasPostage && (
-            <View style={s.priceRow}>
-              <Text style={[s.priceLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Postage</Text>
-              <Text style={[s.priceValue, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>{formatGbp(order.postagePricePence)}</Text>
-            </View>
-          )}
           <View style={[s.divider, { backgroundColor: theme.border }]} />
           <View style={s.priceRow}>
             <Text style={[s.totalLabel, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>Total</Text>

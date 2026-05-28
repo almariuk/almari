@@ -131,10 +131,7 @@ export default function ListingDetail() {
     ? getFitLabel(userMeasurements, listing.measurements as ListingDetailMeasurements | null)
     : null
 
-  // Price breakdown
   const itemPrice = listing.askingPricePence ?? 0
-  const postagePrice = listing.postagePricePence ?? 0
-  const totalPrice = itemPrice + postagePrice
 
   // Has details section
   const hasDetails =
@@ -411,18 +408,8 @@ export default function ListingDetail() {
         ) : (
           <>
             <View style={s.priceBlock}>
-              <View style={s.priceRow}>
-                <Text style={[s.priceItem, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
-                  {formatGbp(itemPrice)}
-                </Text>
-                {postagePrice > 0 && (
-                  <Text style={[s.postageText, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                    {'  +  '}{formatGbp(postagePrice)} postage
-                  </Text>
-                )}
-              </View>
-              <Text style={[s.totalText, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
-                Total {formatGbp(totalPrice)}
+              <Text style={[s.priceItem, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+                {formatGbp(itemPrice)}
               </Text>
             </View>
 

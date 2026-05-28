@@ -29,7 +29,6 @@ export default function ConfirmOrder() {
 
     const ref = 'ALM-' + Math.random().toString(36).substring(2, 7).toUpperCase()
     const salePrice = listing.askingPricePence ?? 0
-    const postagePrice = listing.postagePricePence ?? 0
 
     const { data: txn, error: txnError } = await (supabase as any)
       .from('transactions')
@@ -40,10 +39,7 @@ export default function ConfirmOrder() {
         status: 'pending_payment',
         payment_reference: ref,
         sale_price_pence: salePrice,
-        postage_price_pence: postagePrice,
-        postage_cost_pence: postagePrice,
-        total_paid_pence: salePrice + postagePrice,
-        seller_receives_pence: salePrice,
+        total_paid_pence: salePrice,
       })
       .select('id')
       .single()
@@ -69,8 +65,6 @@ export default function ConfirmOrder() {
   }
 
   const salePrice = listing.askingPricePence ?? 0
-  const postagePrice = listing.postagePricePence ?? 0
-  const totalPrice = salePrice + postagePrice
   const primaryPhoto = listing.photos?.[0]?.url ?? null
 
   return (
@@ -109,19 +103,8 @@ export default function ConfirmOrder() {
         {/* Price breakdown */}
         <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={s.priceRow}>
-            <Text style={[s.priceLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Item</Text>
-            <Text style={[s.priceValue, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>{formatGbp(salePrice)}</Text>
-          </View>
-          {postagePrice > 0 && (
-            <View style={s.priceRow}>
-              <Text style={[s.priceLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Postage</Text>
-              <Text style={[s.priceValue, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>{formatGbp(postagePrice)}</Text>
-            </View>
-          )}
-          <View style={[s.divider, { backgroundColor: theme.border }]} />
-          <View style={s.priceRow}>
             <Text style={[s.totalLabel, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>Total</Text>
-            <Text style={[s.totalValue, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>{formatGbp(totalPrice)}</Text>
+            <Text style={[s.totalValue, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>{formatGbp(salePrice)}</Text>
           </View>
         </View>
 
