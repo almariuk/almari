@@ -164,6 +164,18 @@ export default function BuyerOrderDetail() {
   const [confirming, setConfirming] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Lazily close concern window when buyer views this screen after window expires
+  useEffect(() => {
+    if (!order || order.status !== 'delivered') return
+    if (!order.concernWindowClosesAt || new Date(order.concernWindowClosesAt) > new Date()) return
+    if (order.concernRaisedAt) return
+    ;(supabase as any).rpc('close_concern_window', { p_transaction_id: order.id })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+        queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+      })
+  }, [order?.id, order?.status, order?.concernWindowClosesAt])
+
   if (isLoading) {
     return (
       <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
@@ -312,6 +324,19 @@ export default function BuyerOrderDetail() {
           </>
         )}
 
+        {/* Lost in post — available when dispatched */}
+        {order.status === 'dispatched' && (
+          <TouchableOpacity
+            style={[s.lostLink, { borderColor: theme.border }]}
+            onPress={() => router.push(`/transaction/${order.id}/lost-in-post` as any)}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.lostLinkText, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+              Think this is lost in post?
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Concern window countdown */}
         {order.status === 'delivered' && withinConcernWindow && (
           <View style={[s.windowBanner, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -414,6 +439,9 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     windowBanner: { borderRadius: 10, borderWidth: 1, padding: 14, marginBottom: 16 },
     windowText:   { fontSize: 13, lineHeight: 19 },
+
+    lostLink:     { borderWidth: 1, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 8 },
+    lostLinkText: { fontSize: 13 },
 
     spacer: { height: 16 },
 

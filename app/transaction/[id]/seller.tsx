@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -12,6 +12,14 @@ import type { Theme } from '@/constants/theme'
 
 // S24 — Order detail, seller view
 
+interface DeliveryAddress {
+  line1: string
+  line2?: string | null
+  city: string
+  postcode: string
+  phone?: string | null
+}
+
 interface SaleDetail {
   id: string
   status: string
@@ -23,10 +31,12 @@ interface SaleDetail {
   dispatchedAt: string | null
   buyerConfirmedDeliveredAt: string | null
   concernWindowClosesAt: string | null
+  concernRaisedAt: string | null
   createdAt: string
   buyerName: string
   itemName: string
   photoUrl: string | null
+  deliveryAddress: DeliveryAddress | null
 }
 
 function useSaleDetail(transactionId: string, sellerId: string) {
@@ -40,7 +50,7 @@ function useSaleDetail(transactionId: string, sellerId: string) {
           id, status, payment_reference,
           sale_price_pence, postage_price_pence, total_paid_pence,
           tracking_number, dispatched_at, buyer_confirmed_delivered_at,
-          concern_window_closes_at, created_at,
+          concern_window_closes_at, concern_raised_at, created_at, delivery_address,
           buyer:user_identity!buyer_id ( first_name, last_name_initial ),
           listing:listings!listing_id (
             subcategories ( name ),
@@ -69,10 +79,12 @@ function useSaleDetail(transactionId: string, sellerId: string) {
         dispatchedAt: row.dispatched_at,
         buyerConfirmedDeliveredAt: row.buyer_confirmed_delivered_at,
         concernWindowClosesAt: row.concern_window_closes_at,
+        concernRaisedAt: row.concern_raised_at ?? null,
         createdAt: row.created_at,
         buyerName: buyer ? `${buyer.first_name} ${buyer.last_name_initial}.` : 'Buyer',
         itemName: row.listing?.subcategories?.name ?? 'Item',
         photoUrl: primaryPhoto?.url ?? null,
+        deliveryAddress: row.delivery_address ?? null,
       }
     },
   })
@@ -155,6 +167,18 @@ export default function SellerOrderDetail() {
   const { data: order, isLoading, error } = useSaleDetail(id ?? '', identity?.id ?? '')
   const [saving, setSaving] = useState(false)
   const [trackingInput, setTrackingInput] = useState('')
+
+  // Lazily close concern window when seller views this screen
+  useEffect(() => {
+    if (!order || order.status !== 'delivered') return
+    if (!order.concernWindowClosesAt || new Date(order.concernWindowClosesAt) > new Date()) return
+    if (order.concernRaisedAt) return
+    ;(supabase as any).rpc('close_concern_window', { p_transaction_id: order.id })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['order_seller', order.id] })
+        queryClient.invalidateQueries({ queryKey: ['my_sales'] })
+      })
+  }, [order?.id, order?.status, order?.concernWindowClosesAt])
 
   if (isLoading) {
     return (
@@ -321,8 +345,28 @@ export default function SellerOrderDetail() {
               <Text style={[s.actionHeading, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
                 Post this item
               </Text>
+              {order.deliveryAddress ? (
+                <View style={[s.deliveryBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                  <Text style={[s.deliveryLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>DELIVER TO</Text>
+                  <Text style={[s.deliveryLine, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
+                    {order.deliveryAddress.line1}{order.deliveryAddress.line2 ? `, ${order.deliveryAddress.line2}` : ''}
+                  </Text>
+                  <Text style={[s.deliveryLine, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
+                    {order.deliveryAddress.city}, {order.deliveryAddress.postcode}
+                  </Text>
+                  {order.deliveryAddress.phone && (
+                    <Text style={[s.deliveryLine, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+                      {order.deliveryAddress.phone}
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Text style={[s.actionNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+                  Contact {order.buyerName} directly for their delivery address.
+                </Text>
+              )}
               <Text style={[s.actionNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                Pack and post to the buyer's address. Enter the tracking number from your postage label below.
+                Enter the tracking number from your postage label below.
               </Text>
               <TextInput
                 style={[s.trackingInput, {
@@ -373,6 +417,19 @@ export default function SellerOrderDetail() {
               </Text>
             </View>
           </>
+        )}
+
+        {/* Lost in post — available when dispatched */}
+        {order.status === 'dispatched' && (
+          <TouchableOpacity
+            style={[s.lostLink, { borderColor: theme.border }]}
+            onPress={() => router.push(`/transaction/${order.id}/lost-in-post` as any)}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.lostLinkText, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+              Think this is lost in post?
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* Delivered — concern window */}
@@ -475,5 +532,12 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     actionBtn:     { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     actionBtnText: { fontSize: 15 },
+
+    deliveryBox:   { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 14, gap: 2 },
+    deliveryLabel: { fontSize: 10, letterSpacing: 0.8, marginBottom: 4 },
+    deliveryLine:  { fontSize: 14, lineHeight: 20 },
+
+    lostLink:     { borderWidth: 1, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 8 },
+    lostLinkText: { fontSize: 13 },
   })
 }

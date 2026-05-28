@@ -411,21 +411,27 @@ export default function ListingDetail() {
               <Text style={[s.priceItem, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
                 {formatGbp(itemPrice)}
               </Text>
+              {!listing.sellerHasPaymentDetails && (
+                <Text style={[s.noPaymentText, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
+                  Seller hasn't set up payment yet
+                </Text>
+              )}
             </View>
 
             <TouchableOpacity
               style={[
                 s.buyBtn,
-                { backgroundColor: isWaitlisted ? theme.surface : theme.accent },
+                { backgroundColor: isWaitlisted || !listing.sellerHasPaymentDetails ? theme.surface : theme.accent },
               ]}
-              onPress={isWaitlisted ? handleJoinWaitlist : handleBuyNow}
-              activeOpacity={0.85}
+              onPress={isWaitlisted ? handleJoinWaitlist : listing.sellerHasPaymentDetails ? handleBuyNow : undefined}
+              activeOpacity={listing.sellerHasPaymentDetails ? 0.85 : 1}
+              disabled={!isWaitlisted && !listing.sellerHasPaymentDetails}
             >
               <Text
                 style={[
                   s.buyBtnText,
                   {
-                    color: isWaitlisted ? theme.accent : theme.accentText,
+                    color: isWaitlisted ? theme.accent : listing.sellerHasPaymentDetails ? theme.accentText : theme.textDisabled,
                     fontFamily: 'Inter_600SemiBold',
                   },
                 ]}
@@ -510,6 +516,7 @@ const s = StyleSheet.create({
   priceBlock: { flex: 1 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline' },
   priceItem: { fontSize: 22 },
+  noPaymentText: { fontSize: 11, marginTop: 2 },
   postageText: { fontSize: 13 },
   totalText: { fontSize: 11, marginTop: 2 },
   buyBtn: {

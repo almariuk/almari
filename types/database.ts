@@ -22,6 +22,7 @@ export interface UserAddressRow {
   address_line_2: string | null;
   city: string;
   postcode: string;
+  contact_phone: string | null;
   is_default: boolean;
   created_at: string;
 }

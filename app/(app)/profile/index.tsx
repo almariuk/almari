@@ -232,10 +232,11 @@ export default function Profile() {
   const [addrLine2, setAddrLine2] = useState('');
   const [addrCity, setAddrCity] = useState('');
   const [addrPostcode, setAddrPostcode] = useState('');
+  const [addrPhone, setAddrPhone] = useState('');
   const [savingAddr, setSavingAddr] = useState(false);
 
   const resetAddrForm = () => {
-    setAddrLine1(''); setAddrLine2(''); setAddrCity(''); setAddrPostcode('');
+    setAddrLine1(''); setAddrLine2(''); setAddrCity(''); setAddrPostcode(''); setAddrPhone('');
     setAddingAddress(false);
   };
 
@@ -250,6 +251,7 @@ export default function Profile() {
       address_line_2: addrLine2.trim() || null,
       city: addrCity.trim(),
       postcode: addrPostcode.trim().toUpperCase(),
+      contact_phone: addrPhone.trim() || null,
       is_default: isFirst,
     });
     setSavingAddr(false);
@@ -480,9 +482,16 @@ export default function Profile() {
             <View key={addr.id} style={[s.addrCard, { borderColor: addr.is_default ? theme.accent : theme.border }]}>
               <View style={s.addrCardTop}>
                 <IconMapPin size={14} color={addr.is_default ? theme.accent : theme.textSecondary} />
-                <Text style={[s.addrText, { color: theme.text, flex: 1 }]}>
-                  {addr.address_line_1}{addr.address_line_2 ? `, ${addr.address_line_2}` : ''}, {addr.city}, {addr.postcode}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.addrText, { color: theme.text }]}>
+                    {addr.address_line_1}{addr.address_line_2 ? `, ${addr.address_line_2}` : ''}, {addr.city}, {addr.postcode}
+                  </Text>
+                  {addr.contact_phone && (
+                    <Text style={[s.addrText, { color: theme.textSecondary, fontSize: 12, marginTop: 2 }]}>
+                      {addr.contact_phone}
+                    </Text>
+                  )}
+                </View>
                 {addr.is_default && (
                   <Text style={[s.defaultBadge, { color: theme.accent }]}>Default</Text>
                 )}
@@ -508,11 +517,12 @@ export default function Profile() {
           ) : (
             <View style={[s.addrForm, { borderColor: theme.border }]}>
               {[
-                { placeholder: 'Address line 1', value: addrLine1, set: setAddrLine1, required: true },
-                { placeholder: 'Address line 2 (optional)', value: addrLine2, set: setAddrLine2, required: false },
-                { placeholder: 'City / Town', value: addrCity, set: setAddrCity, required: true },
-                { placeholder: 'Postcode', value: addrPostcode, set: setAddrPostcode, required: true },
-              ].map(({ placeholder, value, set }) => (
+                { placeholder: 'Address line 1', value: addrLine1, set: setAddrLine1, caps: 'words' as const },
+                { placeholder: 'Address line 2 (optional)', value: addrLine2, set: setAddrLine2, caps: 'words' as const },
+                { placeholder: 'City / Town', value: addrCity, set: setAddrCity, caps: 'words' as const },
+                { placeholder: 'Postcode', value: addrPostcode, set: setAddrPostcode, caps: 'characters' as const },
+                { placeholder: 'WhatsApp / phone (optional)', value: addrPhone, set: setAddrPhone, caps: 'none' as const },
+              ].map(({ placeholder, value, set, caps }) => (
                 <TextInput
                   key={placeholder}
                   style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
@@ -520,7 +530,8 @@ export default function Profile() {
                   onChangeText={set}
                   placeholder={placeholder}
                   placeholderTextColor={theme.textDisabled}
-                  autoCapitalize={placeholder.includes('Postcode') ? 'characters' : 'words'}
+                  autoCapitalize={caps}
+                  keyboardType={placeholder.includes('WhatsApp') ? 'phone-pad' : 'default'}
                 />
               ))}
               <View style={s.inlineButtons}>

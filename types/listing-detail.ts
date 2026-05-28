@@ -55,6 +55,7 @@ export interface ListingDetail {
   whySellingText: string | null
 
   sellerName: string
+  sellerHasPaymentDetails: boolean
   sellerTrustScore: number
   listingTrustScore: number
 

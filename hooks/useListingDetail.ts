@@ -28,7 +28,7 @@ export function useListingDetail(id: string) {
           seller_id,
           seller:user_identity!seller_id (
             id, first_name, last_name_initial,
-            user_profile ( trust_score_cached )
+            user_profile ( trust_score_cached, payment_instructions )
           ),
           listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
           listing_trust_scores ( total_score ),
@@ -87,6 +87,7 @@ export function useListingDetail(id: string) {
         sellerName: seller
           ? `${seller.first_name} ${seller.last_name_initial}.`
           : 'Seller',
+        sellerHasPaymentDetails: !!(sellerProfile?.payment_instructions),
         sellerTrustScore: sellerProfile?.trust_score_cached ?? 0,
         listingTrustScore: tsRow?.total_score ?? 0,
         measurements: mRow
