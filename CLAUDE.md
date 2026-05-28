@@ -5,8 +5,9 @@
 - **URL:** `https://smvyzzwzzrnznazygyqt.supabase.co`
 - **Anon key:** `sb_publishable_IH7Mt3vHerSJtFFAkRmtNQ_A49HwtYV`
 - **Service role key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdnl6end6enJuem5henlneXF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ0NjI5NiwiZXhwIjoyMDk1MDIyMjk2fQ.WS5IfnTA2DgmwKliQa-mtINmXpKo4GyCYxm3zve-qeo`
+- **Personal access token (CLI / Management API):** not stored in repo — ask the user to provide it when needed (format: `sbp_...`)
 
-Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Never write these to a file on disk — pass inline in curl commands.
+Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Use the personal access token with `npx supabase` CLI or the Management API (`https://api.supabase.com/v1/projects/smvyzzwzzrnznazygyqt/...`). Never write these to a file on disk — pass inline in curl commands.
 
 ## Tonight's task list
 
