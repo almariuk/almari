@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Clipboard } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
@@ -111,9 +110,9 @@ export default function PaymentInstructions() {
   const [copied, setCopied] = useState(false)
   const secondsLeft = useCountdown(data?.reservedUntil ?? null)
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     if (!data?.paymentReference) return
-    await Clipboard.setStringAsync(data.paymentReference)
+    Clipboard.setString(data.paymentReference)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
