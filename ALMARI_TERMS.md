@@ -55,7 +55,7 @@ When you list an item on Almari you confirm that:
 - Every photograph is of the actual item being sold — not stock imagery or photos of someone else's listing.
 - Your description is accurate. Condition, measurements, set contents, and provenance are described honestly.
 - You are a private individual selling from your own wardrobe. You are not a commercial seller, vendor, retailer, or business of any kind.
-- You will dispatch the item within 48 hours of payment being confirmed.
+- You will dispatch the item within 48 hours of confirming payment received.
 - You will use Royal Mail only. No other carrier is permitted on Almari.
 
 **Almari reserves the right to remove any listing, at any time, without notice, that we believe violates these terms.**
@@ -93,6 +93,7 @@ When you complete a purchase on Almari you confirm that:
 
 - You have read the full listing, including condition, measurements, and any notes from the seller.
 - You understand that all sales are final. There is no return for fit, change of mind, or preference.
+- You will make payment to the seller promptly using the instructions shown at checkout.
 - You will confirm receipt of your item promptly once it arrives.
 - You will only raise a concern if it falls within the three permitted grounds (see section 10).
 
@@ -106,13 +107,13 @@ This is not a policy that can be overridden by a seller offering returns — it 
 
 If an item doesn't fit: relist it. It already has provenance. That is the Almari way.
 
-The only exception is a valid concern raised within 48 hours of delivery on one of the three permitted grounds (section 10), or a lost in post case (section 11).
+The only exception is a valid concern raised within 48 hours of delivery on one of the three permitted grounds (section 10), or a lost in post case (section 12).
 
 ---
 
 ## 10. Concerns (not returns)
 
-You may raise a concern within **48 hours of confirmed delivery**. After 48 hours, the transaction closes and funds are released to the seller.
+You may raise a concern within **48 hours of confirmed delivery**. After 48 hours, the transaction closes.
 
 **The only three permitted grounds for a concern are:**
 
@@ -126,36 +127,37 @@ Concerns that fall outside these three grounds will not be upheld. "Doesn't fit"
 
 - Raise a concern in the app within 48 hours of delivery.
 - Almari reviews the concern against the listing description and photos.
-- If upheld: funds are returned to the buyer from escrow. The seller's trust score is affected.
-- If not upheld: funds are released to the seller. No further action.
+- If upheld: Almari will manually refund the buyer. The seller's trust score is affected.
+- If not upheld: the transaction closes in the seller's favour. No further action.
 - Three concerns upheld against a seller within 90 days results in account review.
 
 Almari's decision on concerns is final.
 
 ---
 
-## 11. Payment and escrow
+## 11. Payment
 
-When a purchase is made, payment is held in escrow by Almari (via Stripe) until delivery is confirmed or the concern window closes. This protects both parties.
+**Almari does not process or hold payments.** All payments on Almari are made directly between buyer and seller.
 
-**Funds are released to the seller when:**
-- The buyer confirms receipt, or
-- Tracking confirms delivery and 48 hours pass without a concern.
+**How it works:**
+- When you place an order, Almari generates a unique payment reference (for example, ALM-12345) and shows you the seller's payment details — their PayPal handle, Revolut tag, bank account information, or other method they have specified.
+- You transfer the agreed amount directly to the seller using their chosen method, quoting your payment reference.
+- The seller confirms in the app that payment has been received before dispatching the item.
+- If payment is not confirmed within a reasonable time, the order may be cancelled and the listing returned to active.
 
-**Funds are returned to the buyer when:**
-- A concern is upheld, or
-- A lost in post case is resolved in the buyer's favour.
+Almari does not charge a transaction fee. We do not hold, process, or escrow funds at any point.
 
-Almari charges a postage fee as part of every transaction. The postage fee covers Royal Mail costs. Almari retains a margin on postage — this is how Almari sustains itself. This margin is never disclosed to either party.
+**Sellers:** your payment details are stored in your Almari profile and shared only with buyers who have placed a confirmed order with you. See our Privacy Policy for full details.
 
 ---
 
 ## 12. Postage and dispatch
 
 - All items must be sent via **Royal Mail only**. No other carrier is accepted.
-- Sellers must dispatch within **48 hours** of payment confirmation.
-- Sellers select a package size and service at listing. The buyer pays the postage shown.
-- Almari will show a warning if the item's asking price exceeds the Royal Mail compensation limit for the selected service. It is the seller's responsibility to choose an appropriately insured service.
+- Sellers must dispatch within **48 hours** of confirming payment received.
+- Sellers are responsible for choosing an appropriate Royal Mail service, packaging the item, and purchasing postage. Almari does not generate postage labels.
+- The price agreed at listing covers postage. Almari does not add a separate postage charge.
+- Sellers must choose a service with adequate compensation cover for the item's value. Almari accepts no liability for items lost or damaged in transit where the seller chose an under-insured service.
 - Once dispatched, the seller must enter tracking details in the app.
 
 ---
@@ -166,17 +168,17 @@ If an item does not arrive:
 
 1. Almari will nudge both parties if tracking has not updated within 48 hours of the expected delivery date.
 2. If there is no resolution within 5 days of the nudge, the buyer may open a lost in post case.
-3. Both parties must agree the item is lost.
+3. Both parties must confirm in the app that they agree the item is lost.
 4. **The seller is responsible for claiming directly with Royal Mail** using their tracking number. Almari cannot make this claim on your behalf.
-5. Once the Royal Mail claim is agreed, Almari will refund the buyer from escrow.
+5. Once both parties have confirmed the item is lost, Almari will manually refund the buyer up to the transaction value.
 
-Almari's liability in a lost in post case is limited to the transaction value held in escrow.
+Almari's liability in a lost in post case is limited to the transaction value.
 
 ---
 
-## 14. Postage cost and the relisting fee
+## 14. Fees
 
-Almari is free to list, free to buy, and free to sell. Almari's only revenue at launch is the postage margin described in section 11.
+Almari is free to list, free to buy, and free to sell. Almari does not charge a transaction fee or a postage margin at launch.
 
 A small relisting fee may be introduced for items listed more than three times. This will be communicated clearly before it applies.
 
@@ -231,7 +233,8 @@ Almari is a platform. We are not party to the contract between buyer and seller.
 
 - Items not matching your expectations of fit, colour, or style
 - Delays caused by Royal Mail
-- Loss or damage in transit beyond the escrow value held
+- Loss or damage in transit beyond the transaction value
+- Disputes arising from direct payment between buyer and seller outside the Almari platform
 - Any indirect, consequential, or economic loss
 
 Nothing in these terms limits our liability for death or personal injury caused by our negligence, or for fraud — as required by English law.
