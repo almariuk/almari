@@ -133,6 +133,7 @@ export default function Splash() {
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleScrollEnd}
               scrollEventThrottle={16}
+              style={{ flex: 1 }}
             >
               {(slides ?? FALLBACK_SLIDES).map((slide, i) => (
                 <View key={i} style={s.slide}>
@@ -212,8 +213,10 @@ const s = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'AvenirNext-DemiBold' : 'Inter_600SemiBold',
     fontSize: 36,
     letterSpacing: 8,
+    paddingRight: 8,
     color: '#FEF9E7',
     marginTop: 8,
+    textAlign: 'center',
   },
   logoTagline: {
     fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Regular' : 'Inter_400Regular',
@@ -228,6 +231,7 @@ const s = StyleSheet.create({
     fontSize: 22,
     color: '#DDB86C',
     marginTop: 4,
+    textAlign: 'center',
   },
 
   // Slides
@@ -246,12 +250,14 @@ const s = StyleSheet.create({
     fontSize: 28,
     color: '#FEF9E7',
     lineHeight: 34,
+    textAlign: 'center',
   },
   slideBody: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     color: 'rgba(254,249,231,0.72)',
     lineHeight: 20,
+    textAlign: 'center',
   },
   dots: {
     flexDirection: 'row',

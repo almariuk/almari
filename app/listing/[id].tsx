@@ -100,6 +100,17 @@ export default function ListingDetail() {
       .then(() => queryClient.invalidateQueries({ queryKey: ['listing_detail', id] }))
   }, [listing?.id, listing?.status, listing?.reservedUntil])
 
+  // Countdown for reserved listings — must be before early returns (Rules of Hooks)
+  const [reservationSecondsLeft, setReservationSecondsLeft] = useState<number | null>(null)
+  useEffect(() => {
+    if (listing?.status !== 'reserved' || !listing?.reservedUntil) { setReservationSecondsLeft(null); return }
+    const target = new Date(listing.reservedUntil).getTime()
+    const calc = () => Math.max(0, Math.floor((target - Date.now()) / 1000))
+    setReservationSecondsLeft(calc())
+    const timerId = setInterval(() => { setReservationSecondsLeft(calc()) }, 1000)
+    return () => clearInterval(timerId)
+  }, [listing?.status, listing?.reservedUntil])
+
   if (isLoading) {
     return (
       <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
@@ -155,17 +166,6 @@ export default function ListingDetail() {
   const isReserved = listing.status === 'reserved'
   const isSeller = !!identity?.id && identity.id === listing.sellerId
   const isBuyer = !!identity?.id && identity.id !== listing.sellerId
-
-  // Countdown for reserved listings (buyer sees live timer)
-  const [reservationSecondsLeft, setReservationSecondsLeft] = useState<number | null>(null)
-  useEffect(() => {
-    if (!isReserved || !listing.reservedUntil) { setReservationSecondsLeft(null); return }
-    const target = new Date(listing.reservedUntil).getTime()
-    const calc = () => Math.max(0, Math.floor((target - Date.now()) / 1000))
-    setReservationSecondsLeft(calc())
-    const id = setInterval(() => { setReservationSecondsLeft(calc()) }, 1000)
-    return () => clearInterval(id)
-  }, [isReserved, listing.reservedUntil])
 
   const reservationExpired = reservationSecondsLeft !== null && reservationSecondsLeft <= 0
   const reservationMinutes = reservationSecondsLeft !== null
