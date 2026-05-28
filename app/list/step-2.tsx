@@ -9,11 +9,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ActivityIndicator } from 'react-native';
 import { IconChevronLeft } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
@@ -90,7 +90,6 @@ export default function ListStep2() {
   const { data: allPostagePrices = [] } = useQuery<PostagePriceRow[]>({
     queryKey: ['postage_prices'],
     queryFn: async () => {
-      // effective_to IS NULL means the price is currently active
       const { data } = await supabase
         .from('postage_prices')
         .select('*')
@@ -99,6 +98,22 @@ export default function ListStep2() {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: selectedCategory } = useQuery<{ category_type: string } | null>({
+    queryKey: ['category_type', draft.categoryId],
+    enabled: draft.categoryId !== null,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('categories')
+        .select('category_type')
+        .eq('id', draft.categoryId)
+        .single();
+      return data ?? null;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const isKids = selectedCategory?.category_type === 'kids';
 
   // ── Derived data ──────────────────────────────────────────────
 
@@ -440,70 +455,99 @@ export default function ListStep2() {
           {/* ── Measurements ──────────────────────────────────── */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>
-              Garment measurements{' '}
+              {isKids ? 'Size & age' : 'Garment measurements'}{' '}
               <Text style={[s.optionalLabel, { color: theme.accent }]}>optional</Text>
             </Text>
             <Text style={[s.hint, { color: theme.textDisabled }]}>
-              These are the garment's dimensions, not your body. Helps buyers get the right fit.
+              {isKids
+                ? 'Age and height this item fits. Helps parents find the right size.'
+                : 'These are the garment\'s dimensions, not your body. Helps buyers get the right fit.'}
             </Text>
 
-            <View style={s.measureGrid}>
-              {[
-                { key: 'bust', label: 'Bust cm', value: draft.listingBustCm, set: draft.setListingBustCm },
-                { key: 'waist', label: 'Waist cm', value: draft.listingWaistCm, set: draft.setListingWaistCm },
-                { key: 'hips', label: 'Hips cm', value: draft.listingHipsCm, set: draft.setListingHipsCm },
-                { key: 'chest', label: 'Chest cm', value: draft.listingChestCm, set: draft.setListingChestCm },
-                { key: 'height', label: 'Height cm', value: draft.listingHeightCm, set: draft.setListingHeightCm },
-                { key: 'shoe', label: 'UK shoe size', value: draft.listingUkShoeSize, set: draft.setListingUkShoeSize },
-              ].map(({ key, label, value, set }) => (
-                <View key={key} style={s.measureCell}>
-                  <Text style={[s.measureLabel, { color: theme.textSecondary }]}>{label}</Text>
-                  <TextInput
-                    style={[
-                      s.measureInput,
-                      {
-                        borderColor: inputBorder(key),
-                        backgroundColor: theme.inputBackground,
-                        color: theme.text,
-                      },
-                    ]}
-                    value={value}
-                    onChangeText={set}
-                    keyboardType={key === 'shoe' ? 'decimal-pad' : 'number-pad'}
-                    placeholder="—"
-                    placeholderTextColor={theme.textDisabled}
-                    onFocus={() => setFocusedField(key)}
-                    onBlur={() => setFocusedField(null)}
-                  />
+            {isKids ? (
+              <>
+                <View style={s.measureGrid}>
+                  {[
+                    { key: 'ageFrom', label: 'Age from (years)', value: draft.listingAgeFromYears, set: draft.setListingAgeFromYears },
+                    { key: 'ageTo',   label: 'Age to (years)',   value: draft.listingAgeToYears,   set: draft.setListingAgeToYears },
+                    { key: 'htFrom',  label: 'Height from (cm)', value: draft.listingHeightFromCm, set: draft.setListingHeightFromCm },
+                    { key: 'htTo',    label: 'Height to (cm)',   value: draft.listingHeightToCm,   set: draft.setListingHeightToCm },
+                  ].map(({ key, label, value, set }) => (
+                    <View key={key} style={s.measureCell}>
+                      <Text style={[s.measureLabel, { color: theme.textSecondary }]}>{label}</Text>
+                      <TextInput
+                        style={[s.measureInput, { borderColor: inputBorder(key), backgroundColor: theme.inputBackground, color: theme.text }]}
+                        value={value}
+                        onChangeText={set}
+                        keyboardType="number-pad"
+                        placeholder="—"
+                        placeholderTextColor={theme.textDisabled}
+                        onFocus={() => setFocusedField(key)}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-
-            {/* Label size — full width, text input */}
-            <View style={s.labelSizeRow}>
-              <Text style={[s.measureLabel, { color: theme.textSecondary }]}>Label size</Text>
-              <View
-                style={[
-                  s.inputWrap,
-                  s.inputWrapFull,
-                  {
-                    borderColor: inputBorder('labelSize'),
-                    backgroundColor: theme.inputBackground,
-                  },
-                ]}
-              >
-                <TextInput
-                  style={[s.input, { color: theme.text }]}
-                  value={draft.listingLabelSize}
-                  onChangeText={draft.setListingLabelSize}
-                  placeholder="e.g. S, M, 38, XL, Free size"
-                  placeholderTextColor={theme.textDisabled}
-                  autoCapitalize="characters"
-                  onFocus={() => setFocusedField('labelSize')}
-                  onBlur={() => setFocusedField(null)}
-                />
-              </View>
-            </View>
+                {/* Shoe size for kids footwear */}
+                <View style={s.labelSizeRow}>
+                  <Text style={[s.measureLabel, { color: theme.textSecondary }]}>UK shoe size</Text>
+                  <View style={[s.inputWrap, s.inputWrapFull, { borderColor: inputBorder('shoe'), backgroundColor: theme.inputBackground }]}>
+                    <TextInput
+                      style={[s.input, { color: theme.text }]}
+                      value={draft.listingUkShoeSize}
+                      onChangeText={draft.setListingUkShoeSize}
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 2"
+                      placeholderTextColor={theme.textDisabled}
+                      onFocus={() => setFocusedField('shoe')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={s.measureGrid}>
+                  {[
+                    { key: 'bust',   label: 'Bust cm',      value: draft.listingBustCm,     set: draft.setListingBustCm },
+                    { key: 'waist',  label: 'Waist cm',     value: draft.listingWaistCm,    set: draft.setListingWaistCm },
+                    { key: 'hips',   label: 'Hips cm',      value: draft.listingHipsCm,     set: draft.setListingHipsCm },
+                    { key: 'chest',  label: 'Chest cm',     value: draft.listingChestCm,    set: draft.setListingChestCm },
+                    { key: 'height', label: 'Height cm',    value: draft.listingHeightCm,   set: draft.setListingHeightCm },
+                    { key: 'shoe',   label: 'UK shoe size', value: draft.listingUkShoeSize, set: draft.setListingUkShoeSize },
+                  ].map(({ key, label, value, set }) => (
+                    <View key={key} style={s.measureCell}>
+                      <Text style={[s.measureLabel, { color: theme.textSecondary }]}>{label}</Text>
+                      <TextInput
+                        style={[s.measureInput, { borderColor: inputBorder(key), backgroundColor: theme.inputBackground, color: theme.text }]}
+                        value={value}
+                        onChangeText={set}
+                        keyboardType={key === 'shoe' ? 'decimal-pad' : 'number-pad'}
+                        placeholder="—"
+                        placeholderTextColor={theme.textDisabled}
+                        onFocus={() => setFocusedField(key)}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </View>
+                  ))}
+                </View>
+                <View style={s.labelSizeRow}>
+                  <Text style={[s.measureLabel, { color: theme.textSecondary }]}>Label size</Text>
+                  <View style={[s.inputWrap, s.inputWrapFull, { borderColor: inputBorder('labelSize'), backgroundColor: theme.inputBackground }]}>
+                    <TextInput
+                      style={[s.input, { color: theme.text }]}
+                      value={draft.listingLabelSize}
+                      onChangeText={draft.setListingLabelSize}
+                      placeholder="e.g. S, M, 38, XL, Free size"
+                      placeholderTextColor={theme.textDisabled}
+                      autoCapitalize="characters"
+                      onFocus={() => setFocusedField('labelSize')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
           </View>
 
           {/* ── Set contents ──────────────────────────────────── */}
