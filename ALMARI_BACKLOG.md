@@ -46,7 +46,37 @@ Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manu
 ### Seller contact method nudge
 Payment instructions screen says "Contact {sellerName} directly" when no payment instructions set. Sellers should be nudged on the bank-details screen to include a WhatsApp number or contact method alongside their payment details. Update placeholder/hint text in `app/(app)/profile/bank-details.tsx`. Resend transactional emails (Phase 3) is the proper long-term solution.
 
-### Pinch to zoom on listing photos
+### Postage — simplify to hints only (8 files, no DB migration)
+
+**Decision:** Postage is not a separate charge. Sellers factor it into their asking price. Listing flow shows a read-only hint box with real Royal Mail prices. Buyer sees one price only.
+
+**DB:** No schema changes. All postage columns stay nullable — new listings leave them null.
+
+**What changes (8 files):**
+
+1. `store/listing-draft.ts` — remove `packageBandId` and `postageServiceId` (dead weight)
+2. `app/list/step-2.tsx` — remove entire postage section (band picker + service cards + 3 queries). Replace with static hint box using real prices from DB. Remove postage gate from `canProceed`.
+3. `app/list/review.tsx` — remove 3 postage queries; remove `package_band_id`, `postage_service_id`, `postage_price_pence`, `underinsured_warning_shown` from listing insert; remove underinsured warning; remove postage from review summary.
+4. `hooks/useListingDetail.ts` — remove `postage_price_pence` and `postage_services` from select; remove from return object.
+5. `types/listing-detail.ts` — remove `postagePricePence` and `postageServiceName`.
+6. `app/listing/[id].tsx` — remove `postagePrice`/`totalPrice`; remove "+ £X postage" display. Single price only.
+7. `app/transaction/new/confirm.tsx` — remove 3 postage queries, remove underinsured warning, `total_paid_pence = sale_price_pence`.
+8. `app/transaction/[id]/buyer.tsx` + `seller.tsx` — remove `postagePricePence` and `hasPostage` conditional.
+
+**Hint box copy (step 2 + step 3 pricing screen):**
+> Postage is your cost — factor it into your asking price.
+> Small parcel (dupatta, kurta): £3.65–£4.65 · Medium (saree, salwar set): £5.55–£8.55 · Large (lehenga, sherwani): £11.95–£16.15
+
+**T&Cs:** Already correct. Section 12 already says "The price agreed at listing covers postage. Almari does not add a separate postage charge." No changes needed.
+
+**Postage DB prices (updated 28 May 2026 from royalmail.com):**
+- Tracked 48: Small £3.65, Medium <2kg £5.55, Medium >2kg £7.35 (£75 comp)
+- Tracked 24: Small £4.65, Medium <2kg £6.55, Medium >2kg £8.55 (£75 comp)
+- Express 48: Large <5kg £11.95, Large >5kg £14.20 (£150 comp)
+- Express 24: Large <5kg £12.50, Large >5kg £16.15 (£150 comp)
+- **Update annually each January from royalmail.com/price-finder — 18 rows in `postage_prices` table**
+
+
 Buyers should be able to pinch-zoom into listing photos on S6 to inspect fabric, embroidery, condition. `PhotoCarousel` currently uses a plain `ScrollView` with `expo-image`. Use `react-native-reanimated` + `react-native-gesture-handler` pinch gesture, or swap to a library like `react-native-zoom-toolkit`. Zoom should reset on swipe to next photo.
 
 ### React Query staleTime
