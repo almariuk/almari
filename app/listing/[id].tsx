@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { IconCandleFilled } from '@tabler/icons-react-native'
+import { useQueryClient } from '@tanstack/react-query'
+import { IconCandleFilled, IconClock } from '@tabler/icons-react-native'
+import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
 import { useListingDetail } from '@/hooks/useListingDetail'
@@ -86,8 +88,17 @@ export default function ListingDetail() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { profile, identity } = useAuthStore()
+  const queryClient = useQueryClient()
   const { data: listing, isLoading, error } = useListingDetail(id ?? '')
   const { data: tiers = [] } = useTrustTiers()
+
+  // Expire stale reservation lazily when this screen loads
+  useEffect(() => {
+    if (!listing || listing.status !== 'reserved' || !listing.reservedUntil) return
+    if (new Date(listing.reservedUntil).getTime() > Date.now()) return
+    ;(supabase as any).rpc('expire_listing_reservation', { p_listing_id: listing.id })
+      .then(() => queryClient.invalidateQueries({ queryKey: ['listing_detail', id] }))
+  }, [listing?.id, listing?.status, listing?.reservedUntil])
 
   if (isLoading) {
     return (
@@ -144,7 +155,25 @@ export default function ListingDetail() {
   const isWaitlisted = listing.negotiationActive || listing.waitlistCount > 0
 
   const isAvailable = listing.status === 'active'
+  const isReserved = listing.status === 'reserved'
   const isSeller = !!identity?.id && identity.id === listing.sellerId
+  const isBuyer = !!identity?.id && identity.id !== listing.sellerId
+
+  // Countdown for reserved listings (buyer sees live timer)
+  const [reservationSecondsLeft, setReservationSecondsLeft] = useState<number | null>(null)
+  useEffect(() => {
+    if (!isReserved || !listing.reservedUntil) { setReservationSecondsLeft(null); return }
+    const target = new Date(listing.reservedUntil).getTime()
+    const calc = () => Math.max(0, Math.floor((target - Date.now()) / 1000))
+    setReservationSecondsLeft(calc())
+    const id = setInterval(() => { setReservationSecondsLeft(calc()) }, 1000)
+    return () => clearInterval(id)
+  }, [isReserved, listing.reservedUntil])
+
+  const reservationExpired = reservationSecondsLeft !== null && reservationSecondsLeft <= 0
+  const reservationMinutes = reservationSecondsLeft !== null
+    ? Math.ceil(reservationSecondsLeft / 60)
+    : null
 
   const handleBuyNow = () => {
     router.push(`/transaction/new/confirm?listingId=${listing.id}` as any)
@@ -342,7 +371,24 @@ export default function ListingDetail() {
               Edit listing
             </Text>
           </TouchableOpacity>
-        ) : !isAvailable ? (
+
+        ) : isReserved && !reservationExpired ? (
+          <View style={s.reservedBlock}>
+            <View style={[s.reservedBadge, { backgroundColor: theme.gold + '18', borderColor: theme.gold }]}>
+              <IconClock size={14} color={theme.gold} />
+              <Text style={[s.reservedText, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
+                {reservationMinutes !== null
+                  ? `Being reserved — ${reservationMinutes} min${reservationMinutes === 1 ? '' : 's'} left`
+                  : 'Being reserved right now'
+                }
+              </Text>
+            </View>
+            <Text style={[s.reservedSub, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+              This piece is the only one — check back shortly.
+            </Text>
+          </View>
+
+        ) : !isAvailable && !reservationExpired ? (
           <Text style={[s.unavailableText, { color: theme.textSecondary, fontFamily: 'CormorantGaramond_400Regular_Italic' }]}>
             This piece is no longer available.
           </Text>
@@ -474,4 +520,18 @@ const s = StyleSheet.create({
   },
   buyBtnText: { fontSize: 15 },
   unavailableText: { flex: 1, textAlign: 'center', fontSize: 16 },
+
+  reservedBlock: { flex: 1, gap: 6 },
+  reservedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  reservedText: { fontSize: 13 },
+  reservedSub:  { fontSize: 12, lineHeight: 18 },
 })

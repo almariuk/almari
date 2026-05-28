@@ -12,7 +12,7 @@ export function useListingDetail(id: string) {
       const { data, error } = await supabase
         .from('listings')
         .select(`
-          id, status, negotiation_active, waitlist_count,
+          id, status, reserved_until, negotiation_active, waitlist_count,
           asking_price_pence, postage_price_pence,
           additional_notes, set_contents, set_complete,
           listing_photos ( url, display_order ),
@@ -62,6 +62,7 @@ export function useListingDetail(id: string) {
         id: row.id,
         sellerId: row.seller_id ?? null,
         status: row.status as ListingStatus,
+        reservedUntil: row.reserved_until ?? null,
         negotiationActive: row.negotiation_active ?? false,
         waitlistCount: row.waitlist_count ?? 0,
         askingPricePence: row.asking_price_pence,

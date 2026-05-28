@@ -55,6 +55,8 @@ export interface ListingDetail {
   sellerTrustScore: number
   listingTrustScore: number
 
+  reservedUntil: string | null
+
   measurements: ListingDetailMeasurements | null
   provenance: ListingDetailProvenance | null
 }
