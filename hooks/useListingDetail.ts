@@ -12,11 +12,11 @@ export function useListingDetail(id: string) {
       const { data, error } = await supabase
         .from('listings')
         .select(`
-          id, status, negotiation_active, waitlist_count,
+          id, status, reserved_until, negotiation_active, waitlist_count,
           asking_price_pence, postage_price_pence,
           additional_notes, set_contents, set_complete,
           listing_photos ( url, display_order ),
-          subcategories ( name ),
+          subcategories ( name, categories ( category_type ) ),
           occasion_buckets ( display_name ),
           colour_swatches ( hex_code, name, name_hindi ),
           condition_tiers ( display_text ),
@@ -30,7 +30,7 @@ export function useListingDetail(id: string) {
             id, first_name, last_name_initial,
             user_profile ( trust_score_cached )
           ),
-          listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size ),
+          listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
           listing_trust_scores ( total_score ),
           postage_services ( name ),
           provenance (
@@ -62,6 +62,7 @@ export function useListingDetail(id: string) {
         id: row.id,
         sellerId: row.seller_id ?? null,
         status: row.status as ListingStatus,
+        reservedUntil: row.reserved_until ?? null,
         negotiationActive: row.negotiation_active ?? false,
         waitlistCount: row.waitlist_count ?? 0,
         askingPricePence: row.asking_price_pence,
@@ -74,6 +75,7 @@ export function useListingDetail(id: string) {
           .sort((a, b) => a.display_order - b.display_order)
           .map(p => ({ url: p.url, displayOrder: p.display_order })),
         subcategoryName: row.subcategories?.name ?? '',
+        categoryType: (row.subcategories?.categories?.category_type ?? null) as 'women' | 'men' | 'kids' | null,
         occasionDisplayName: row.occasion_buckets?.display_name ?? null,
         conditionDisplayText: row.condition_tiers?.display_text ?? '',
         colourHex: row.colour_swatches?.hex_code ?? null,
@@ -98,6 +100,10 @@ export function useListingDetail(id: string) {
               heightCm: mRow.height_cm ?? null,
               ukShoeSize: mRow.uk_shoe_size ?? null,
               labelSize: mRow.label_size ?? null,
+              ageFromYears: mRow.age_from_years ?? null,
+              ageToYears: mRow.age_to_years ?? null,
+              heightFromCm: mRow.height_from_cm ?? null,
+              heightToCm: mRow.height_to_cm ?? null,
             }
           : null,
         provenance: pRow

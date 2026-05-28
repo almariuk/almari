@@ -239,24 +239,40 @@ export default function ListingDetail() {
           {listing.measurements && (
             <>
               <Divider />
-              <SectionLabel text="Measurements" />
-              {listing.measurements.bustCm !== null && (
-                <DetailRow label="Bust" value={formatMeasurement(listing.measurements.bustCm)} />
-              )}
-              {listing.measurements.waistCm !== null && (
-                <DetailRow label="Waist" value={formatMeasurement(listing.measurements.waistCm)} />
-              )}
-              {listing.measurements.hipsCm !== null && (
-                <DetailRow label="Hips" value={formatMeasurement(listing.measurements.hipsCm)} />
-              )}
-              {listing.measurements.heightCm !== null && (
-                <DetailRow label="Height" value={formatMeasurement(listing.measurements.heightCm)} />
-              )}
-              {listing.measurements.ukShoeSize !== null && (
-                <DetailRow label="UK shoe size" value={String(listing.measurements.ukShoeSize)} />
-              )}
-              {listing.measurements.labelSize && (
-                <DetailRow label="Label size" value={listing.measurements.labelSize} />
+              <SectionLabel text={listing.categoryType === 'kids' ? 'Size & age' : 'Measurements'} />
+              {listing.categoryType === 'kids' ? (
+                <>
+                  {listing.measurements.ageFromYears !== null && listing.measurements.ageToYears !== null && (
+                    <DetailRow label="Age" value={`${listing.measurements.ageFromYears}–${listing.measurements.ageToYears} years`} />
+                  )}
+                  {listing.measurements.heightFromCm !== null && listing.measurements.heightToCm !== null && (
+                    <DetailRow label="Height" value={`${listing.measurements.heightFromCm}–${listing.measurements.heightToCm} cm`} />
+                  )}
+                  {listing.measurements.ukShoeSize !== null && (
+                    <DetailRow label="UK shoe size" value={String(listing.measurements.ukShoeSize)} />
+                  )}
+                </>
+              ) : (
+                <>
+                  {listing.measurements.bustCm !== null && (
+                    <DetailRow label="Bust" value={formatMeasurement(listing.measurements.bustCm)} />
+                  )}
+                  {listing.measurements.waistCm !== null && (
+                    <DetailRow label="Waist" value={formatMeasurement(listing.measurements.waistCm)} />
+                  )}
+                  {listing.measurements.hipsCm !== null && (
+                    <DetailRow label="Hips" value={formatMeasurement(listing.measurements.hipsCm)} />
+                  )}
+                  {listing.measurements.heightCm !== null && (
+                    <DetailRow label="Height" value={formatMeasurement(listing.measurements.heightCm)} />
+                  )}
+                  {listing.measurements.ukShoeSize !== null && (
+                    <DetailRow label="UK shoe size" value={String(listing.measurements.ukShoeSize)} />
+                  )}
+                  {listing.measurements.labelSize && (
+                    <DetailRow label="Label size" value={listing.measurements.labelSize} />
+                  )}
+                </>
               )}
               {fitLabel && <FitBadge label={fitLabel} theme={theme} />}
             </>

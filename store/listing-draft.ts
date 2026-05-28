@@ -28,7 +28,7 @@ interface ListingDraftData {
   originalPriceCurrency: 'INR' | 'GBP';
   originalPriceApproximate: boolean;
 
-  // Step 2 — Garment measurements
+  // Step 2 — Garment measurements (adult)
   listingBustCm: string;
   listingWaistCm: string;
   listingHipsCm: string;
@@ -36,6 +36,12 @@ interface ListingDraftData {
   listingHeightCm: string;
   listingUkShoeSize: string;
   listingLabelSize: string;
+
+  // Step 2 — Garment measurements (kids)
+  listingAgeFromYears: string;
+  listingAgeToYears: string;
+  listingHeightFromCm: string;
+  listingHeightToCm: string;
 
   // Step 2 — Set
   whatIsIncluded: string;
@@ -81,7 +87,7 @@ interface ListingDraftActions {
   setOriginalPriceInr: (v: string) => void;
   setOriginalPriceCurrency: (v: 'INR' | 'GBP') => void;
   setOriginalPriceApproximate: (v: boolean) => void;
-  // Step 2 — Measurements
+  // Step 2 — Measurements (adult)
   setListingBustCm: (v: string) => void;
   setListingWaistCm: (v: string) => void;
   setListingHipsCm: (v: string) => void;
@@ -89,6 +95,11 @@ interface ListingDraftActions {
   setListingHeightCm: (v: string) => void;
   setListingUkShoeSize: (v: string) => void;
   setListingLabelSize: (v: string) => void;
+  // Step 2 — Measurements (kids)
+  setListingAgeFromYears: (v: string) => void;
+  setListingAgeToYears: (v: string) => void;
+  setListingHeightFromCm: (v: string) => void;
+  setListingHeightToCm: (v: string) => void;
   // Step 2 — Set
   setWhatIsIncluded: (v: string) => void;
   setIsSetComplete: (v: boolean | null) => void;
@@ -137,6 +148,10 @@ const initialData: ListingDraftData = {
   listingHeightCm: '',
   listingUkShoeSize: '',
   listingLabelSize: '',
+  listingAgeFromYears: '',
+  listingAgeToYears: '',
+  listingHeightFromCm: '',
+  listingHeightToCm: '',
   whatIsIncluded: '',
   isSetComplete: null,
   additionalNotes: '',
@@ -191,7 +206,7 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   setOriginalPriceCurrency: (v) => set({ originalPriceCurrency: v }),
   setOriginalPriceApproximate: (v) => set({ originalPriceApproximate: v }),
 
-  // Step 2 — Measurements
+  // Step 2 — Measurements (adult)
   setListingBustCm: (v) => set({ listingBustCm: v }),
   setListingWaistCm: (v) => set({ listingWaistCm: v }),
   setListingHipsCm: (v) => set({ listingHipsCm: v }),
@@ -199,6 +214,11 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   setListingHeightCm: (v) => set({ listingHeightCm: v }),
   setListingUkShoeSize: (v) => set({ listingUkShoeSize: v }),
   setListingLabelSize: (v) => set({ listingLabelSize: v }),
+  // Step 2 — Measurements (kids)
+  setListingAgeFromYears: (v) => set({ listingAgeFromYears: v }),
+  setListingAgeToYears: (v) => set({ listingAgeToYears: v }),
+  setListingHeightFromCm: (v) => set({ listingHeightFromCm: v }),
+  setListingHeightToCm: (v) => set({ listingHeightToCm: v }),
 
   // Step 2 — Set
   setWhatIsIncluded: (v) => set({ whatIsIncluded: v }),

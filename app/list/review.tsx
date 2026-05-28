@@ -356,11 +356,17 @@ export default function ListReview() {
       });
 
       // 5. Insert measurements (only if at least one field filled)
-      const hasMeasurements = [
+      const adultFields = [
         draft.listingBustCm, draft.listingWaistCm, draft.listingHipsCm,
         draft.listingChestCm, draft.listingHeightCm, draft.listingUkShoeSize,
         draft.listingLabelSize,
-      ].some((v) => v.trim().length > 0);
+      ];
+      const kidsFields = [
+        draft.listingAgeFromYears, draft.listingAgeToYears,
+        draft.listingHeightFromCm, draft.listingHeightToCm,
+        draft.listingUkShoeSize,
+      ];
+      const hasMeasurements = [...adultFields, ...kidsFields].some((v) => v.trim().length > 0);
 
       if (hasMeasurements) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -373,6 +379,10 @@ export default function ListReview() {
           height_cm: parseCm(draft.listingHeightCm),
           uk_shoe_size: parseCm(draft.listingUkShoeSize),
           label_size: draft.listingLabelSize.trim() || null,
+          age_from_years: parseCm(draft.listingAgeFromYears),
+          age_to_years: parseCm(draft.listingAgeToYears),
+          height_from_cm: parseCm(draft.listingHeightFromCm),
+          height_to_cm: parseCm(draft.listingHeightToCm),
         });
       }
 

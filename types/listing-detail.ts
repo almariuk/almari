@@ -7,6 +7,10 @@ export interface ListingDetailMeasurements {
   heightCm: number | null
   ukShoeSize: number | null
   labelSize: string | null
+  ageFromYears: number | null
+  ageToYears: number | null
+  heightFromCm: number | null
+  heightToCm: number | null
 }
 
 export interface ListingDetailProvenance {
@@ -36,6 +40,7 @@ export interface ListingDetail {
   photos: { url: string; displayOrder: number }[]
 
   subcategoryName: string
+  categoryType: 'women' | 'men' | 'kids' | null
   occasionDisplayName: string | null
 
   conditionDisplayText: string
