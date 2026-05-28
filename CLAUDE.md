@@ -46,8 +46,8 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [x] Step 4: S22 My Purchases (`app/(app)/profile/purchases.tsx`) + My Sales (`app/(app)/profile/sales.tsx`) — list screens with status tabs, accessible from Profile → Orders
 - [x] Step 5: S23 Order detail, buyer view (`app/transaction/[id]/buyer.tsx`) — status timeline, payment reminder, tracking, confirm received (opens 48h concern window), raise a concern nav
 - [x] Step 6: S24 Order detail, seller view (`app/transaction/[id]/seller.tsx`) — confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed states
-- [ ] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`, emails atulblal@gmail.com
-- [ ] Step 8: S26 Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — both parties confirm, status → `refunded`, manual Almari refund
+- [x] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`. Email notification (atulblal@gmail.com) is Phase 3 T7.
+- [x] Step 8: S26 Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — both parties confirm, status → `refunded`, manual Almari refund
 - [ ] Step 9: Trust score events on completion — sale completed (+5), purchase completed (+3), concern upheld (−10)
 
 ### Phase 3 — Stripe + Sendcloud (post-launch, when transaction volume justifies it)
@@ -195,8 +195,8 @@ When a new feature or change is requested, reason about the full system impact f
 | S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
 | Order confirm | `app/transaction/new/confirm.tsx` | Done (item summary + price, "Place order" creates transaction) |
 | Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (PayPal + Revolut details, 20-min countdown, scarcity copy, F&F instruction box) |
-| S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Stub — Step 7 |
-| S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Stub — Step 8 |
+| S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Done (3 reasons, confirm step, sets concern_open) |
+| S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Done (both-party confirm, sets refunded) |
 | S27 — Seller public profile | `app/profile/[id].tsx` | Done (diya, member since, listings grid) |
 
 ### Key components
