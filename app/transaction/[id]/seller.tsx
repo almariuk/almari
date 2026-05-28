@@ -455,7 +455,7 @@ export default function SellerOrderDetail() {
               Order complete
             </Text>
             <Text style={[s.actionNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-              Almari will settle your payout of {formatGbp(order.totalPaidPence)} within 48 hours.
+              The buyer has confirmed receipt. This transaction is now closed.
             </Text>
           </View>
         )}
