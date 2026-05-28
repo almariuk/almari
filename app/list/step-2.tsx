@@ -616,7 +616,7 @@ export default function ListStep2() {
               Large (lehenga, sherwani): £11.95–£16.15
             </Text>
             <Text style={[s.postageHintDisclaimer, { color: theme.textDisabled }]}>
-              Compensation claims are subject to Royal Mail's terms. Keep your proof of postage and the original purchase receipt — Royal Mail may ask for both.
+              Compensation is subject to Royal Mail's terms and conditions.
             </Text>
           </View>
 
