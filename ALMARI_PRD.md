@@ -22,7 +22,7 @@ Every transaction is an act of cultural preservation. The provenance certificate
 
 ## The Rules — Never Break These
 1. No vendors. No shops. No commercial sellers. Ever. Enforce actively.
-2. Maximum 20 active listings per seller at any time.
+2. ~~Maximum 20 active listings per seller at any time.~~ **Removed.** Listing cap trigger dropped from DB. Anti-vendor protection enforced via provenance + trust system, not a hard cap.
 3. Royal Mail only for postage. No Evri, no DPD.
 4. All sales final. No returns. Buy it knowing what you're buying.
 5. Never show Almari's postage margin to anyone.
@@ -102,6 +102,11 @@ Warm. Cultural. Human. Never corporate. Never generic startup.
 
 ---
 
+## Fabric Types
+DB-driven from `fabric_types` table (Rule 12 — nothing hardcoded). Already seeded and live in the listing flow. Values include: Silk, Georgette, Chiffon, Net, Velvet, Crepe, Organza, Brocade, Cotton, Handloom, Synthetic / Polyester, Linen, Satin, Other.
+
+---
+
 ## Work Types (simplified)
 - Zari and gold work
 - Sequins and stones
@@ -167,8 +172,9 @@ Mystery is intentional. Nobody knows how many tiers exist. Gold may never be ann
 
 **Trust score events (configurable, not hardcoded):**
 Verification: email +2, address +3, measurements +2, bank details +3, phone +3
-Activity: first listing +2, first purchase +2, sale completed +5, purchase completed +3, detailed listing +1, measurements on listing +1, waitlist converted +2
-Behaviour: concern upheld -10, listing removed changed mind -2, listing removed sold elsewhere -5
+Activity: first listing +2, first purchase +2, sale completed +5, purchase completed +3, detailed listing +1, measurements on listing +1
+Activity (post-launch): waitlist converted +2 (requires negotiation engine)
+Behaviour: concern upheld −10, listing removed changed mind −2, listing removed sold elsewhere −5
 
 ### Listing Trust — The Firework
 Visual: A firework burst. Expands outward from centre as score increases. Low score = single spark. High score = full gold burst with silver outer sparks.
@@ -225,15 +231,23 @@ Almari suggests an offer range based on category, subcategory, fabric, condition
 Buyer saves measurements once in profile: bust, waist, hips, height, uk_shoe_size.
 Listings sorted by fit match — not filtered, never hidden.
 
-Four sort tiers:
+**Adult clothing — four sort tiers:**
 1. Exact fit — within 1 inch tolerance
 2. Quick pin — within 2 inches. Label exactly "Quick pin"
 3. Quick stitch — within 3-4 inches. Label exactly "Quick stitch"
 4. Everything else — shown below, never hidden
 
+**Kids clothing — three sort tiers (age + height based):**
+1. Fits now — height within range for listed age band
+2. Nearly there — within one size band above or below
+3. Different size — shown below, never hidden
+
+**Footwear — exact match only:**
+Matched on `uk_shoe_size`. Exact match = Fits. Everything else shown below unlabelled.
+
 ---
 
-## Waitlist
+## Waitlist — Post-launch (requires negotiation engine)
 When offer is active on a listing:
 - Listing stays visible in search
 - Offer button replaced with "Someone is interested in this piece. Join the waitlist."
@@ -252,12 +266,47 @@ When offer is active on a listing:
 
 ---
 
-## Delivery and Escrow Flow
-Payment taken → held in Stripe escrow → item dispatched → tracking confirmed delivered → OR buyer confirms receipt → 48 hour concern window → no concern → funds released → daily 2pm payout batch.
+## Listing and Transaction States
 
-If tracking not updated 48 hours after ETA → nudge both parties.
-5 days silence after nudge → message to buyer: sorry, you can open a lost in post case.
-Lost in post case → both parties agree → seller claims Royal Mail directly → Almari refunds buyer from escrow.
+### Listing statuses
+| Status | Description |
+|---|---|
+| `draft` | Created but not submitted. Persisted to DB from step 1. |
+| `active` | Live and available to buy. |
+| `reserved` | Buy Now tapped — locked for 10 minutes while payment processes. Prevents race condition. |
+| `sold` | Payment confirmed. |
+| `removed` | Seller removed it. Reason captured via S18. |
+| `removed_by_admin` | Almari removed it. |
+| `suspended` | Under review. Hidden from search. |
+
+### Transaction statuses
+| Status | Description |
+|---|---|
+| `pending_payment` | Buyer placed order, payment reference issued. Awaiting offline transfer. |
+| `paid` | Seller confirmed payment received. |
+| `dispatched` | Seller confirmed posted, tracking number entered. |
+| `delivered` | Buyer confirmed receipt. 48h concern window opens. |
+| `concern_open` | Buyer raised concern within 48h window. |
+| `concern_resolved` | Concern upheld or dismissed by Almari. |
+| `completed` | 48h window closed with no concern, or concern dismissed. Payout due. |
+| `refunded` | Concern upheld or lost in post confirmed by both parties. Manual Almari refund. |
+| `cancelled` | Cancelled before dispatch (e.g. seller unable to fulfil). |
+
+### Listing expiry
+Listings do not expire. A piece of Indian ethnic wear may take months to find its buyer — that is fine. After 90 days with no views → seller nudged: "Is this still available?" Seller confirms or removes. Nudge is informational only, not automated suspension.
+
+---
+
+## Delivery Flow (offline payment model at launch)
+Buy Now tapped → transaction created (`pending_payment`), payment reference `ALM-XXXXX` issued, listing status `reserved` (DB trigger) → buyer transfers funds offline (PayPal/Revolut/bank transfer) using reference → seller confirms payment received → `paid` → seller posts item, enters tracking number → `dispatched` → buyer confirms receipt → `delivered`, 48h concern window opens → no concern → `completed`, Almari manually settles payout → seller receives funds.
+
+If no concern raised within 48h window → `completed`. Almari pays seller within 48h.
+
+If tracking not updated 5 days after dispatch → nudge both parties.
+No response after nudge → buyer can open a lost in post case.
+Lost in post case → both parties confirm in-app → transaction status `refunded`, Almari manually refunds buyer.
+
+**Post-launch (Phase 3):** Stripe replaces offline transfer. Sendcloud generates Royal Mail labels. Escrow automates payout. Flow is identical — only the payment step changes.
 
 ---
 
@@ -272,45 +321,56 @@ Concern affects seller trust score if upheld. Three concerns in 90 days → trus
 ---
 
 ## Removal Score
-Sellers who remove listings accumulate a removal score.
-Changed mind: -2 | Sold elsewhere: -5 | Mistake: -1 | Damaged: 0
+Sellers who remove listings accumulate a removal score. Score is a positive accumulator — it goes UP with each removal. Separate from the seller trust (diya) score which goes DOWN.
 
-Score 5: warning shown to seller.
-Score 9: free listing privilege suspended for 3 months.
-Seller can still list — pays a small fee during suspension.
-Score resets after 3 months.
-Removal score visible to seller in their profile.
+| Reason | Removal score +δ | Trust score −δ |
+|---|---|---|
+| Changed mind | +2 | −2 |
+| Sold elsewhere | +5 | −5 |
+| Mistake | +1 | 0 |
+| Damaged | 0 | 0 |
+
+Score 5: warning shown to seller in profile.
+Score 9: free listing privilege suspended for 3 months. Seller can still list — pays a small fee per listing during suspension.
+Score resets to 0 after 3 months.
+Removal score visible to seller only in their profile.
 
 ---
 
-## The 21 Screens
+## Screens
 S1 — Splash
 S2 — Register (email verification inline)
 S3 — Welcome + measurements
 S4 — Home feed
 S5 — Search and filters
-S6 — Listing detail (photos, story, price context, offer slider)
+S6 — Listing detail (photos, story, price context, Buy Now button — offer slider added post-launch with negotiation engine)
 S7 — Listing creation pt 1 (photos, category, style, colour, condition, occasion, why selling)
 S8 — Listing creation pt 2 (provenance, measurements, postage)
 S9 — Pricing (trust score, price suggestion, asking price)
 S10 — Review and confirm
-S11 — Offer status (all negotiation states)
-S12 — Payment
-S13 — Dispatch (label + confirm posted)
-S14 — Tracking
-S15 — Lost in post case
+S11 — Offer status (all negotiation states — post-launch when negotiation engine added)
+S12 — Payment (checkout, Stripe)
 S16 — Profile (history, certificates, badges, payouts, bank details)
 S17 — Notifications
-S18 — Removal reason
+S18 — Removal reason (changed mind / sold elsewhere / mistake / damaged — feeds removal score)
 S19 — Bank details entry
 S20 — My listings (active, sold, removed)
 S21 — Measurements (accessible anytime from profile)
+S22 — My Purchases (buyer's purchase list — active / completed)
+S23 — Order detail, buyer view (status timeline, tracking, confirm receipt, raise concern button)
+S24 — Order detail, seller view (dispatch instructions, confirm posted, tracking entry, payout status)
+S25 — Raise a concern (3 reasons, 48h window with countdown)
+S26 — Lost in post case (both parties confirm in-app, Almari initiates refund)
+S27 — Seller public profile (diya tier, member since, completed sales count, active listings — read only, no contact)
 
 ---
 
-## Filters
-**Popular (shown immediately):** Category, subcategory, occasion bucket, colour swatches, fits me sort toggle, budget slider
-**Special (under more filters):** Condition, pattern, work type, fabric
+## Filters and Sort
+
+**Sort options:** Newest first (default), Price low → high, Price high → low, Best fit (Fits Me score)
+
+**Popular filters (shown immediately):** Category, subcategory, occasion bucket, colour swatches, fits me sort toggle, budget slider
+**Special filters (under more filters):** Condition, pattern, work type, fabric
 
 ---
 
@@ -344,6 +404,23 @@ All config tables are blank on fresh install. Each brand seeds their own categor
 
 ---
 
+## Empty States
+
+Every screen with a list must have a designed empty state — never a blank screen.
+
+| Screen | Empty state copy |
+|---|---|
+| S4 Home feed (no listings yet) | "Be one of the first. The cupboards are opening." + Sell button |
+| S4 Home feed (no fit matches) | "Add your measurements to find pieces that fit." + link to S21 |
+| S5 Search (no results) | "Nothing yet. But it might arrive tomorrow." + Save search (post-launch) |
+| S20 My Listings — active | "Your first listing is waiting to be written." + List button |
+| S20 My Listings — sold | "Your first sale is coming." |
+| S20 My Listings — removed | Blank — no copy needed |
+| S22 My Purchases | "Nothing yet. Find something beautiful." + link to S4 |
+| S27 Seller profile — no active listings | "Nothing listed right now." |
+
+---
+
 ## Legal Framework
 All sales are final. Almari is a peer to peer platform between private individuals. Not a retailer. Consumer retail return rights do not apply.
 
@@ -360,7 +437,7 @@ Full T&Cs drafted — see separate legal document.
 ---
 
 ## Launch Scope (MVP)
-IN: All categories, UK wide, detailed listing only, full listing trust score, full price context panel, buy now only, provenance data capture, fits me sort, push notifications, Royal Mail via Sendcloud, manual payouts, Stripe escrow, internal trust score, waitlist, removal score, all config driven.
+IN: All categories, UK wide, detailed listing only, full listing trust score, price context panel, buy now only, provenance data capture, fits me sort, Royal Mail via Sendcloud, Stripe escrow, manual payouts, seller trust score (diya), removal score tracking (S18), concerns (S25), order tracking (S22–S26), all config driven.
 
-OUT (backlog): Make an offer + negotiation engine, private pricing tiers, pricing intelligence algorithm, badges and gamification, removal score automation, promoted listings, quick list, automated payouts, lost in post case management UI, seasonal notification automation, provenance certificate PDF, social content generator, search trends engine.
+OUT (post-launch): Make an offer + negotiation engine, waitlist, private pricing tiers, pricing intelligence algorithm, badges and gamification, promoted listings, quick list, automated payouts, automated payout batch, lost in post case management UI (manual process at launch), seasonal notification automation, provenance certificate PDF, social content generator, search trends engine, push notification triggers (manual Supabase comms at launch), biometric login.
 
