@@ -615,6 +615,9 @@ export default function ListStep2() {
             <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
               Large (lehenga, sherwani): £11.95–£16.15
             </Text>
+            <Text style={[s.postageHintDisclaimer, { color: theme.textDisabled }]}>
+              Compensation claims are subject to Royal Mail's terms. Keep your proof of postage and the original purchase receipt — Royal Mail may ask for both.
+            </Text>
           </View>
 
           {/* ── Next ────────────────────────────────────────────── */}
@@ -793,6 +796,12 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontFamily: 'Inter_400Regular',
       fontSize: 12,
       lineHeight: 19,
+    },
+    postageHintDisclaimer: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 11,
+      lineHeight: 16,
+      marginTop: 8,
     },
 
     nextBtn: {
