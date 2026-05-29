@@ -29,6 +29,7 @@ interface SaleDetail {
   totalPaidPence: number
   trackingNumber: string | null
   dispatchedAt: string | null
+  buyerPaymentClaimedAt: string | null
   buyerConfirmedDeliveredAt: string | null
   concernWindowClosesAt: string | null
   concernRaisedAt: string | null
@@ -49,7 +50,8 @@ function useSaleDetail(transactionId: string, sellerId: string) {
         .select(`
           id, status, payment_reference,
           sale_price_pence, postage_price_pence, total_paid_pence,
-          tracking_number, dispatched_at, buyer_confirmed_delivered_at,
+          tracking_number, dispatched_at, buyer_payment_claimed_at,
+          buyer_confirmed_delivered_at,
           concern_window_closes_at, concern_raised_at, created_at, delivery_address,
           buyer:user_identity!buyer_id ( first_name, last_name_initial ),
           listing:listings!listing_id (
@@ -77,6 +79,7 @@ function useSaleDetail(transactionId: string, sellerId: string) {
         totalPaidPence: row.total_paid_pence,
         trackingNumber: row.tracking_number,
         dispatchedAt: row.dispatched_at,
+        buyerPaymentClaimedAt: row.buyer_payment_claimed_at,
         buyerConfirmedDeliveredAt: row.buyer_confirmed_delivered_at,
         concernWindowClosesAt: row.concern_window_closes_at,
         concernRaisedAt: row.concern_raised_at ?? null,
@@ -313,15 +316,19 @@ export default function SellerOrderDetail() {
         {/* Action: confirm payment */}
         {order.status === 'pending_payment' && (
           <>
-            <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>ACTION REQUIRED</Text>
-            <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[s.sectionLabel, { color: order.buyerPaymentClaimedAt ? theme.accent : theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>
+              {order.buyerPaymentClaimedAt ? 'PAYMENT SENT BY BUYER' : 'ACTION REQUIRED'}
+            </Text>
+            <View style={[s.card, { backgroundColor: theme.surface, borderColor: order.buyerPaymentClaimedAt ? theme.accent : theme.border }]}>
               <Text style={[s.actionHeading, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
-                Awaiting payment
+                {order.buyerPaymentClaimedAt ? 'Buyer says payment is sent' : 'Awaiting payment'}
               </Text>
               <Text style={[s.actionNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                {order.buyerName} will transfer {formatGbp(order.totalPaidPence)} to you using reference{' '}
-                <Text style={{ fontFamily: 'Inter_600SemiBold', color: theme.text }}>{order.paymentReference}</Text>.
-                Once received, confirm below.
+                {order.buyerPaymentClaimedAt
+                  ? `Check your PayPal or Revolut for ${formatGbp(order.totalPaidPence)} with reference `
+                  : `${order.buyerName} will transfer ${formatGbp(order.totalPaidPence)} to you using reference `}
+                <Text style={{ fontFamily: 'Inter_600SemiBold', color: theme.text }}>{order.paymentReference}</Text>
+                {order.buyerPaymentClaimedAt ? '. Once confirmed, tap below.' : '. Once received, confirm below.'}
               </Text>
               <View style={[s.deliveryBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 <Text style={[s.deliveryLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>DELIVER TO</Text>

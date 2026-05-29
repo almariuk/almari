@@ -54,6 +54,7 @@ interface TxRow {
   total_paid_pence: number
   payment_reference: string | null
   created_at: string
+  buyer_payment_claimed_at: string | null
   buyerName: string
   itemName: string
   photoUrl: string | null
@@ -67,7 +68,7 @@ function useSales(userId: string) {
       const { data, error } = await (supabase as any)
         .from('transactions')
         .select(`
-          id, status, total_paid_pence, payment_reference, created_at,
+          id, status, total_paid_pence, payment_reference, created_at, buyer_payment_claimed_at,
           buyer:user_identity!buyer_id ( first_name, last_name_initial ),
           listing:listings!listing_id (
             subcategories ( name ),
@@ -89,6 +90,7 @@ function useSales(userId: string) {
           total_paid_pence: row.total_paid_pence,
           payment_reference: row.payment_reference,
           created_at: row.created_at,
+          buyer_payment_claimed_at: row.buyer_payment_claimed_at,
           buyerName: buyer ? `${buyer.first_name} ${buyer.last_name_initial}.` : 'Buyer',
           itemName: row.listing?.subcategories?.name ?? 'Item',
           photoUrl: primaryPhoto?.url ?? null,
@@ -198,9 +200,9 @@ export default function MySales() {
                     {fmtDate(item.created_at)}
                   </Text>
                 </View>
-                <View style={[s.statusBadge, { borderColor: statusColour(item.status, theme) }]}>
-                  <Text style={[s.statusText, { color: statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
-                    {STATUS_LABELS[item.status] ?? item.status}
+                <View style={[s.statusBadge, { borderColor: item.status === 'pending_payment' && item.buyer_payment_claimed_at ? theme.accent : statusColour(item.status, theme) }]}>
+                  <Text style={[s.statusText, { color: item.status === 'pending_payment' && item.buyer_payment_claimed_at ? theme.accent : statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
+                    {item.status === 'pending_payment' && item.buyer_payment_claimed_at ? 'Payment sent' : STATUS_LABELS[item.status] ?? item.status}
                   </Text>
                 </View>
               </View>
