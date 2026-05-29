@@ -370,15 +370,16 @@ export default function Profile() {
     enabled: !!identityId,
   });
 
-  const orderCountsQuery = useQuery<{ purchases: number; sales: number }>({
+  const orderCountsQuery = useQuery<{ purchases: number; sales: number; listings: number }>({
     queryKey: ['order_counts', identityId],
     queryFn: async () => {
       const ACTIVE = ['pending_payment', 'paid', 'dispatched', 'delivered', 'concern_open', 'concern_resolved'];
-      const [p, s] = await Promise.all([
+      const [p, s, l] = await Promise.all([
         (supabase as any).from('transactions').select('id', { count: 'exact', head: true }).eq('buyer_id', identityId).in('status', ACTIVE),
         (supabase as any).from('transactions').select('id', { count: 'exact', head: true }).eq('seller_id', identityId).in('status', ACTIVE),
+        (supabase as any).from('listings').select('id', { count: 'exact', head: true }).eq('seller_id', identityId).in('status', ['active', 'reserved']),
       ]);
-      return { purchases: p.count ?? 0, sales: s.count ?? 0 };
+      return { purchases: p.count ?? 0, sales: s.count ?? 0, listings: l.count ?? 0 };
     },
     enabled: !!identityId,
   });
@@ -428,7 +429,7 @@ export default function Profile() {
         {/* KPI row — Listings / Purchases / Sales */}
         <View style={s.kpiRow}>
           {([
-            { label: 'Listings', count: profile?.active_listing_count ?? 0, route: '/profile/my-listings' },
+            { label: 'Listings', count: orderCountsQuery.data?.listings ?? profile?.active_listing_count ?? 0, route: '/profile/my-listings' },
             { label: 'Purchases', count: orderCountsQuery.data?.purchases ?? 0, route: '/profile/purchases' },
             { label: 'Sales', count: orderCountsQuery.data?.sales ?? 0, route: '/profile/sales' },
           ] as const).map(({ label, count, route }) => (
