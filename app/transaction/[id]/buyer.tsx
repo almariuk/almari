@@ -442,7 +442,13 @@ export default function BuyerOrderDetail() {
           {order.status === 'pending_payment' && (
             <TouchableOpacity
               style={[s.actionBtn, { backgroundColor: theme.accent }]}
-              onPress={() => router.replace('/' as any)}
+              onPress={() => {
+                Alert.alert(
+                  'Thanks for sending payment!',
+                  `Once ${order.sellerFirstName} confirms they've received it, your order will progress automatically. Keep your reference handy: ${order.paymentReference}`,
+                  [{ text: 'Done', onPress: () => router.replace('/' as any) }]
+                )
+              }}
               activeOpacity={0.85}
             >
               <Text style={[s.actionBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
