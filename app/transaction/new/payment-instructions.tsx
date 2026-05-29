@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Clipboard } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Clipboard, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { IconCopy, IconCheck, IconInfoCircle, IconClock } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
@@ -108,6 +108,8 @@ export default function PaymentInstructions() {
   const s = makeStyles(theme)
   const { data, isLoading, error } = usePaymentInstructions(id ?? '')
   const [copied, setCopied] = useState(false)
+  const [claiming, setClaiming] = useState(false)
+  const qc = useQueryClient()
   const secondsLeft = useCountdown(data?.reservedUntil ?? null)
 
   const handleCopy = () => {
@@ -117,7 +119,24 @@ export default function PaymentInstructions() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleDone = () => router.replace('/' as any)
+  const handleDone = async () => {
+    if (!id) return
+    setClaiming(true)
+    const { error } = await (supabase as any)
+      .from('transactions')
+      .update({ buyer_payment_claimed_at: new Date().toISOString() })
+      .eq('id', id)
+    setClaiming(false)
+    if (error) {
+      Alert.alert('Error', 'Could not record your payment claim. Please try again.')
+      return
+    }
+    await qc.invalidateQueries({ queryKey: ['my_purchases'] })
+    await qc.invalidateQueries({ queryKey: ['order_counts'] })
+    Alert.alert('Thank you!', 'We\'ve let the seller know you\'ve sent payment. You\'ll be notified once they confirm.', [
+      { text: 'OK', onPress: () => router.replace('/' as any) }
+    ])
+  }
 
   if (isLoading) {
     return (
@@ -280,13 +299,15 @@ export default function PaymentInstructions() {
 
       <View style={[s.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
         <TouchableOpacity
-          style={[s.doneBtn, { backgroundColor: theme.accent }]}
+          style={[s.doneBtn, { backgroundColor: theme.accent, opacity: claiming ? 0.7 : 1 }]}
           onPress={handleDone}
           activeOpacity={0.85}
+          disabled={claiming}
         >
-          <Text style={[s.doneBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
-            Done — I've sent payment
-          </Text>
+          {claiming
+            ? <ActivityIndicator color={theme.accentText} />
+            : <Text style={[s.doneBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>Done — I've sent payment</Text>
+          }
         </TouchableOpacity>
       </View>
     </SafeAreaView>
