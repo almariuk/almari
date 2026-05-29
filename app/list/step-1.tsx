@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconCamera, IconChevronLeft, IconX } from '@tabler/icons-react-native';
+import { IconCamera, IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
 import { useListingDraftStore } from '@/store/listing-draft';
@@ -57,6 +57,14 @@ export default function ListStep1() {
 
   const removePhoto = (index: number) =>
     draft.setPhotoUris(draft.photoUris.filter((_, i) => i !== index));
+
+  const movePhoto = (index: number, direction: -1 | 1) => {
+    const uris = [...draft.photoUris];
+    const target = index + direction;
+    if (target < 0 || target >= uris.length) return;
+    [uris[index], uris[target]] = [uris[target], uris[index]];
+    draft.setPhotoUris(uris);
+  };
 
   const { data: categories = [], isLoading: loadingCats } = useQuery<CategoryRow[]>({
     queryKey: ['categories'],
@@ -256,6 +264,20 @@ export default function ListStep1() {
                 >
                   <IconX size={10} color="#fff" strokeWidth={3} />
                 </TouchableOpacity>
+                {draft.photoUris.length > 1 && (
+                  <View style={s.reorderRow}>
+                    {index > 0 && (
+                      <TouchableOpacity style={s.reorderBtn} onPress={() => movePhoto(index, -1)} hitSlop={6}>
+                        <IconChevronLeft size={10} color="#fff" strokeWidth={3} />
+                      </TouchableOpacity>
+                    )}
+                    {index < draft.photoUris.length - 1 && (
+                      <TouchableOpacity style={s.reorderBtn} onPress={() => movePhoto(index, 1)} hitSlop={6}>
+                        <IconChevronRight size={10} color="#fff" strokeWidth={3} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
                 {index === 0 && (
                   <View style={s.coverBadge}>
                     <Text style={s.coverText}>Cover</Text>
@@ -740,6 +762,21 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       width: 20,
       height: 20,
       borderRadius: 10,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    reorderRow: {
+      position: 'absolute',
+      bottom: 5,
+      right: 5,
+      flexDirection: 'row',
+      gap: 4,
+    },
+    reorderBtn: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
       backgroundColor: 'rgba(0,0,0,0.55)',
       alignItems: 'center',
       justifyContent: 'center',

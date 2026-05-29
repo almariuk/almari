@@ -59,6 +59,7 @@ interface ListingDraftData {
 
 // ── Actions ──────────────────────────────────────────────────
 interface ListingDraftActions {
+  hydrate: (data: ListingDraftData) => void;
   // Step 1
   setPhotoUris: (uris: string[]) => void;
   setCategoryId: (id: number | null) => void;
@@ -107,6 +108,8 @@ interface ListingDraftActions {
   setListingId: (id: string) => void;
   reset: () => void;
 }
+
+export type { ListingDraftData };
 
 export type ListingDraftState = ListingDraftData & ListingDraftActions;
 
@@ -224,4 +227,5 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   // Review
   setListingId: (id) => set({ listingId: id }),
   reset: () => set(initialData),
+  hydrate: (data) => set(data),
 }));

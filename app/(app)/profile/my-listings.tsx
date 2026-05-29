@@ -11,10 +11,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconChevronRight, IconPencil } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { useTheme } from '@/hooks/useTheme'
+import { useListingDraftStore } from '@/store/listing-draft'
+import type { ListingDraftData } from '@/store/listing-draft'
 
 type Tab = 'active' | 'sold' | 'removed'
 
@@ -54,12 +56,99 @@ const REMOVAL_LABELS: Record<string, string> = {
   other:           'Other reason',
 }
 
+async function fetchListingForEdit(listingId: string): Promise<ListingDraftData> {
+  const { data, error } = await (supabase as any)
+    .from('listings')
+    .select(`
+      id, category_id, subcategory_id, work_type_id, pattern_id, fabric_type_id,
+      occasion_bucket_id, colour_id, condition_id, care_status_id,
+      why_selling_copy_id, seller_motivation_type_id,
+      set_contents, set_complete, additional_notes, asking_price_pence,
+      listing_photos ( url, display_order ),
+      provenance ( city_id, area_id, seller_type_id, purchase_year,
+                   original_price_inr, original_price_approximate, is_heirloom, heirloom_story ),
+      listing_measurements ( bust_cm, waist_cm, hips_cm, chest_cm, height_cm,
+                              uk_shoe_size, label_size, age_from_years, age_to_years,
+                              height_from_cm, height_to_cm ),
+      private_seller_motivation ( motivation_type_id )
+    `)
+    .eq('id', listingId)
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? 'Failed to load listing')
+
+  const photos: { url: string; display_order: number }[] = Array.isArray(data.listing_photos) ? data.listing_photos : []
+  photos.sort((a, b) => a.display_order - b.display_order)
+
+  const prov = Array.isArray(data.provenance) ? data.provenance[0] : data.provenance
+  const meas = Array.isArray(data.listing_measurements) ? data.listing_measurements[0] : data.listing_measurements
+  const motiv = Array.isArray(data.private_seller_motivation) ? data.private_seller_motivation[0] : data.private_seller_motivation
+
+  const str = (v: number | null | undefined) => v != null ? String(v) : ''
+
+  return {
+    listingId: data.id,
+    photoUris: photos.map((p) => p.url),
+    categoryId: data.category_id,
+    subcategoryId: data.subcategory_id,
+    workTypeId: data.work_type_id ?? null,
+    patternId: data.pattern_id ?? null,
+    fabricTypeId: data.fabric_type_id ?? null,
+    occasionBucketId: data.occasion_bucket_id ?? null,
+    colourId: data.colour_id ?? null,
+    conditionId: data.condition_id,
+    careStatusId: data.care_status_id ?? null,
+    whySellingCopyId: data.why_selling_copy_id ?? null,
+    motivationTypeId: motiv?.motivation_type_id ?? null,
+    isHeirloom: prov?.is_heirloom ?? false,
+    heirloomStory: prov?.heirloom_story ?? '',
+    provenanceCityId: prov?.city_id ?? null,
+    provenanceCityOther: false,
+    provenanceAreaId: prov?.area_id ?? null,
+    sellerTypeId: prov?.seller_type_id ?? null,
+    purchaseYear: prov?.purchase_year != null ? String(prov.purchase_year) : '',
+    originalPriceInr: prov?.original_price_inr != null ? String(prov.original_price_inr) : '',
+    originalPriceCurrency: 'INR',
+    originalPriceApproximate: prov?.original_price_approximate ?? false,
+    listingBustCm: str(meas?.bust_cm),
+    listingWaistCm: str(meas?.waist_cm),
+    listingHipsCm: str(meas?.hips_cm),
+    listingChestCm: str(meas?.chest_cm),
+    listingHeightCm: str(meas?.height_cm),
+    listingUkShoeSize: str(meas?.uk_shoe_size),
+    listingLabelSize: meas?.label_size ?? '',
+    listingAgeFromYears: str(meas?.age_from_years),
+    listingAgeToYears: str(meas?.age_to_years),
+    listingHeightFromCm: str(meas?.height_from_cm),
+    listingHeightToCm: str(meas?.height_to_cm),
+    whatIsIncluded: data.set_contents ?? '',
+    isSetComplete: data.set_complete ?? null,
+    additionalNotes: data.additional_notes ?? '',
+    askingPricePence: data.asking_price_pence ?? null,
+  }
+}
+
 export default function MyListings() {
   const theme = useTheme()
   const router = useRouter()
   const { identity } = useAuthStore()
+  const hydrate = useListingDraftStore((st) => st.hydrate)
+  const reset = useListingDraftStore((st) => st.reset)
   const identityId = identity?.id ?? ''
   const [tab, setTab] = useState<Tab>('active')
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null)
+
+  async function openEdit(listingId: string) {
+    setEditLoadingId(listingId)
+    try {
+      const draftData = await fetchListingForEdit(listingId)
+      reset()
+      hydrate(draftData)
+      router.push('/list/step-1' as any)
+    } finally {
+      setEditLoadingId(null)
+    }
+  }
 
   const s = makeStyles(theme)
 
@@ -168,7 +257,22 @@ export default function MyListings() {
                 )}
               </View>
 
-              <IconChevronRight size={16} color={theme.border} style={{ alignSelf: 'center', marginRight: 12 }} />
+              {tab === 'active' ? (
+                <TouchableOpacity
+                  style={[s.editBtn, { borderColor: theme.border }]}
+                  onPress={() => openEdit(item.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  {editLoadingId === item.id ? (
+                    <ActivityIndicator size="small" color={theme.accent} />
+                  ) : (
+                    <IconPencil size={15} color={theme.textSecondary} />
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <IconChevronRight size={16} color={theme.border} style={{ alignSelf: 'center', marginRight: 12 }} />
+              )}
             </TouchableOpacity>
           )}
         />
@@ -201,5 +305,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     price:        { fontSize: 22 },
     badge:        { fontFamily: 'Inter_500Medium', fontSize: 12 },
     removalNote:  { fontFamily: 'Inter_400Regular', fontSize: 12 },
+    editBtn:      { alignSelf: 'center', marginRight: 12, borderWidth: 1, borderRadius: 8, padding: 8, minWidth: 36, alignItems: 'center', justifyContent: 'center' },
   })
 }

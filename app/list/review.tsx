@@ -6,14 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { File as FSFile } from 'expo-file-system/next';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconChevronLeft } from '@tabler/icons-react-native';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/useTheme';
@@ -45,6 +44,9 @@ const BUCKET = 'listing-photos';
 // ── Photo upload ───────────────────────────────────────────────
 
 async function uploadPhoto(uri: string, userId: string, index: number): Promise<string> {
+  // Existing storage URLs (from edit mode) — skip re-upload
+  if (uri.startsWith('https://')) return uri;
+
   // Resize to max 1200px wide, re-encode as sRGB JPEG. This normalises colour
   // profiles (P3 → sRGB) and strips EXIF orientation — both of which break
   // Supabase's CDN transform and caused wrong colours / zoom on device.
@@ -91,6 +93,9 @@ export default function ListReview() {
   const resetDraft = useListingDraftStore((st: ListingDraftState) => st.reset);
   const session = useAuthStore((st: ReturnType<typeof useAuthStore.getState>) => st.session);
   const identity = useAuthStore((st: ReturnType<typeof useAuthStore.getState>) => st.identity);
+
+  const qc = useQueryClient();
+  const isEditMode = !!draft.listingId;
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -245,73 +250,17 @@ export default function ListReview() {
 
   async function submit() {
     if (!session || !identity) return;
-    const userId = session.user.id; // auth UID — used for storage path
-    const sellerId = identity.id;   // user_identity.id — used as seller_id FK
+    const userId = session.user.id;
+    const sellerId = identity.id;
     setSubmitting(true);
     setSubmitError(null);
 
     try {
-      // 1. Upload photos in parallel
+      // 1. Upload new photos; pass through existing storage URLs unchanged
       const photoUrls = await Promise.all(
         draft.photoUris.map((uri: string, i: number) => uploadPhoto(uri, userId, i)),
       );
 
-      // 2. Insert listing row
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: listing, error: listingError } = await (supabase as any)
-        .from('listings')
-        .insert({
-          seller_id: sellerId,
-          category_id: draft.categoryId!,
-          subcategory_id: draft.subcategoryId!,
-          occasion_bucket_id: draft.occasionBucketId,
-          colour_id: draft.colourId,
-          condition_id: draft.conditionId!,
-          pattern_id: draft.patternId,
-          work_type_id: draft.workTypeId,
-          fabric_type_id: draft.fabricTypeId,
-          care_status_id: draft.careStatusId,
-          why_selling_copy_id: draft.whySellingCopyId,
-          seller_motivation_type_id: draft.motivationTypeId,
-          set_contents: draft.whatIsIncluded.trim() || null,
-          set_complete: draft.isSetComplete,
-          additional_notes: draft.additionalNotes.trim() || null,
-          asking_price_pence: draft.askingPricePence,
-          status: 'active',
-          listing_type: 'standard',
-        })
-        .select('id')
-        .single();
-
-      if (listingError || !listing) throw new Error(listingError?.message ?? 'Listing insert failed');
-      const listingId = listing.id;
-
-      // 3. Insert listing_photos
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('listing_photos').insert(
-        photoUrls.map((url: string, i: number) => ({
-          listing_id: listingId,
-          url,
-          display_order: i,
-          photo_type: null as null,
-        })),
-      );
-
-      // 4. Insert provenance row (always — even if all fields are null)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('provenance').insert({
-        listing_id: listingId,
-        city_id: draft.provenanceCityId,
-        area_id: draft.provenanceAreaId,
-        seller_type_id: draft.sellerTypeId,
-        purchase_year: draft.purchaseYear ? parseInt(draft.purchaseYear, 10) : null,
-        original_price_inr: draft.originalPriceInr ? parseFloat(draft.originalPriceInr) : null,
-        original_price_approximate: draft.originalPriceApproximate,
-        is_heirloom: draft.isHeirloom,
-        heirloom_story: draft.heirloomStory.trim() || null,
-      });
-
-      // 5. Insert measurements (only if at least one field filled)
       const adultFields = [
         draft.listingBustCm, draft.listingWaistCm, draft.listingHipsCm,
         draft.listingChestCm, draft.listingHeightCm, draft.listingUkShoeSize,
@@ -324,56 +273,232 @@ export default function ListReview() {
       ];
       const hasMeasurements = [...adultFields, ...kidsFields].some((v) => v.trim().length > 0);
 
-      if (hasMeasurements) {
+      if (isEditMode) {
+        // ── UPDATE path ───────────────────────────────────────
+
+        const listingId = draft.listingId!;
+
+        // 2a. Update listing row
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listing_measurements').insert({
-          listing_id: listingId,
-          bust_cm: parseCm(draft.listingBustCm),
-          waist_cm: parseCm(draft.listingWaistCm),
-          hips_cm: parseCm(draft.listingHipsCm),
-          chest_cm: parseCm(draft.listingChestCm),
-          height_cm: parseCm(draft.listingHeightCm),
-          uk_shoe_size: parseCm(draft.listingUkShoeSize),
-          label_size: draft.listingLabelSize.trim() || null,
-          age_from_years: parseCm(draft.listingAgeFromYears),
-          age_to_years: parseCm(draft.listingAgeToYears),
-          height_from_cm: parseCm(draft.listingHeightFromCm),
-          height_to_cm: parseCm(draft.listingHeightToCm),
-        });
-      }
+        const { error: listingError } = await (supabase as any)
+          .from('listings')
+          .update({
+            category_id: draft.categoryId!,
+            subcategory_id: draft.subcategoryId!,
+            occasion_bucket_id: draft.occasionBucketId,
+            colour_id: draft.colourId,
+            condition_id: draft.conditionId!,
+            pattern_id: draft.patternId,
+            work_type_id: draft.workTypeId,
+            fabric_type_id: draft.fabricTypeId,
+            care_status_id: draft.careStatusId,
+            why_selling_copy_id: draft.whySellingCopyId,
+            seller_motivation_type_id: draft.motivationTypeId,
+            set_contents: draft.whatIsIncluded.trim() || null,
+            set_complete: draft.isSetComplete,
+            additional_notes: draft.additionalNotes.trim() || null,
+            asking_price_pence: draft.askingPricePence,
+          })
+          .eq('id', listingId);
 
-      // 6. Insert private seller motivation
-      if (draft.motivationTypeId !== null) {
+        if (listingError) throw new Error(listingError.message);
+
+        // 3a. Replace photos (delete all then reinsert in current order)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('private_seller_motivation').insert({
+        await (supabase as any).from('listing_photos').delete().eq('listing_id', listingId);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_photos').insert(
+          photoUrls.map((url: string, i: number) => ({
+            listing_id: listingId,
+            url,
+            display_order: i,
+            photo_type: null as null,
+          })),
+        );
+
+        // 4a. Upsert provenance
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('provenance').upsert({
           listing_id: listingId,
-          user_id: sellerId,
-          motivation_type_id: draft.motivationTypeId,
+          city_id: draft.provenanceCityId,
+          area_id: draft.provenanceAreaId,
+          seller_type_id: draft.sellerTypeId,
+          purchase_year: draft.purchaseYear ? parseInt(draft.purchaseYear, 10) : null,
+          original_price_inr: draft.originalPriceInr ? parseFloat(draft.originalPriceInr) : null,
+          original_price_approximate: draft.originalPriceApproximate,
+          is_heirloom: draft.isHeirloom,
+          heirloom_story: draft.heirloomStory.trim() || null,
+        }, { onConflict: 'listing_id' });
+
+        // 5a. Upsert or delete measurements
+        if (hasMeasurements) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('listing_measurements').upsert({
+            listing_id: listingId,
+            bust_cm: parseCm(draft.listingBustCm),
+            waist_cm: parseCm(draft.listingWaistCm),
+            hips_cm: parseCm(draft.listingHipsCm),
+            chest_cm: parseCm(draft.listingChestCm),
+            height_cm: parseCm(draft.listingHeightCm),
+            uk_shoe_size: parseCm(draft.listingUkShoeSize),
+            label_size: draft.listingLabelSize.trim() || null,
+            age_from_years: parseCm(draft.listingAgeFromYears),
+            age_to_years: parseCm(draft.listingAgeToYears),
+            height_from_cm: parseCm(draft.listingHeightFromCm),
+            height_to_cm: parseCm(draft.listingHeightToCm),
+          }, { onConflict: 'listing_id' });
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('listing_measurements').delete().eq('listing_id', listingId);
+        }
+
+        // 6a. Replace private seller motivation
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('private_seller_motivation').delete().eq('listing_id', listingId);
+        if (draft.motivationTypeId !== null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('private_seller_motivation').insert({
+            listing_id: listingId,
+            user_id: sellerId,
+            motivation_type_id: draft.motivationTypeId,
+          });
+        }
+
+        // 7a. Replace trust score + components
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_trust_scores').upsert(
+          { listing_id: listingId, total_score: totalScore },
+          { onConflict: 'listing_id' },
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_trust_components').delete().eq('listing_id', listingId);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_trust_components').insert(
+          components.map((c: TrustComponent) => ({
+            listing_id: listingId,
+            component_name: c.label,
+            max_score: c.max,
+            earned_score: c.earned,
+            is_complete: c.earned === c.max,
+            nudge_text: null,
+          })),
+        );
+
+        qc.invalidateQueries({ queryKey: ['listing_detail', listingId] });
+        qc.invalidateQueries({ queryKey: ['my_listings'] });
+        qc.invalidateQueries({ queryKey: ['feed_listings'] });
+        setSubmitted(true);
+
+      } else {
+        // ── INSERT path ───────────────────────────────────────
+
+        // 2. Insert listing row
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: listing, error: listingError } = await (supabase as any)
+          .from('listings')
+          .insert({
+            seller_id: sellerId,
+            category_id: draft.categoryId!,
+            subcategory_id: draft.subcategoryId!,
+            occasion_bucket_id: draft.occasionBucketId,
+            colour_id: draft.colourId,
+            condition_id: draft.conditionId!,
+            pattern_id: draft.patternId,
+            work_type_id: draft.workTypeId,
+            fabric_type_id: draft.fabricTypeId,
+            care_status_id: draft.careStatusId,
+            why_selling_copy_id: draft.whySellingCopyId,
+            seller_motivation_type_id: draft.motivationTypeId,
+            set_contents: draft.whatIsIncluded.trim() || null,
+            set_complete: draft.isSetComplete,
+            additional_notes: draft.additionalNotes.trim() || null,
+            asking_price_pence: draft.askingPricePence,
+            status: 'active',
+            listing_type: 'standard',
+          })
+          .select('id')
+          .single();
+
+        if (listingError || !listing) throw new Error(listingError?.message ?? 'Listing insert failed');
+        const listingId = listing.id;
+
+        // 3. Insert listing_photos
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_photos').insert(
+          photoUrls.map((url: string, i: number) => ({
+            listing_id: listingId,
+            url,
+            display_order: i,
+            photo_type: null as null,
+          })),
+        );
+
+        // 4. Insert provenance row
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('provenance').insert({
+          listing_id: listingId,
+          city_id: draft.provenanceCityId,
+          area_id: draft.provenanceAreaId,
+          seller_type_id: draft.sellerTypeId,
+          purchase_year: draft.purchaseYear ? parseInt(draft.purchaseYear, 10) : null,
+          original_price_inr: draft.originalPriceInr ? parseFloat(draft.originalPriceInr) : null,
+          original_price_approximate: draft.originalPriceApproximate,
+          is_heirloom: draft.isHeirloom,
+          heirloom_story: draft.heirloomStory.trim() || null,
         });
-      }
 
-      // 7. Insert trust score
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('listing_trust_scores').insert({
-        listing_id: listingId,
-        total_score: totalScore,
-      });
+        // 5. Insert measurements
+        if (hasMeasurements) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('listing_measurements').insert({
+            listing_id: listingId,
+            bust_cm: parseCm(draft.listingBustCm),
+            waist_cm: parseCm(draft.listingWaistCm),
+            hips_cm: parseCm(draft.listingHipsCm),
+            chest_cm: parseCm(draft.listingChestCm),
+            height_cm: parseCm(draft.listingHeightCm),
+            uk_shoe_size: parseCm(draft.listingUkShoeSize),
+            label_size: draft.listingLabelSize.trim() || null,
+            age_from_years: parseCm(draft.listingAgeFromYears),
+            age_to_years: parseCm(draft.listingAgeToYears),
+            height_from_cm: parseCm(draft.listingHeightFromCm),
+            height_to_cm: parseCm(draft.listingHeightToCm),
+          });
+        }
 
-      // 8. Insert trust components
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('listing_trust_components').insert(
-        components.map((c: TrustComponent) => ({
+        // 6. Insert private seller motivation
+        if (draft.motivationTypeId !== null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('private_seller_motivation').insert({
+            listing_id: listingId,
+            user_id: sellerId,
+            motivation_type_id: draft.motivationTypeId,
+          });
+        }
+
+        // 7. Insert trust score
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_trust_scores').insert({
           listing_id: listingId,
-          component_name: c.label,
-          max_score: c.max,
-          earned_score: c.earned,
-          is_complete: c.earned === c.max,
-          nudge_text: null,
-        })),
-      );
+          total_score: totalScore,
+        });
 
-      setListingId(listingId);
-      setSubmitted(true);
+        // 8. Insert trust components
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listing_trust_components').insert(
+          components.map((c: TrustComponent) => ({
+            listing_id: listingId,
+            component_name: c.label,
+            max_score: c.max,
+            earned_score: c.earned,
+            is_complete: c.earned === c.max,
+            nudge_text: null,
+          })),
+        );
+
+        setListingId(listingId);
+        setSubmitted(true);
+      }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -388,9 +513,11 @@ export default function ListReview() {
       <SafeAreaView style={s.root} edges={['top', 'bottom']}>
         <View style={s.successRoot}>
           <FireworkTrust score={maxScore} maxScore={maxScore} size={100} />
-          <Text style={s.successTitle}>Your listing is live!</Text>
+          <Text style={s.successTitle}>{isEditMode ? 'Listing updated!' : 'Your listing is live!'}</Text>
           <Text style={s.successSubtitle}>
-            It's now visible to buyers across the Almari community.
+            {isEditMode
+              ? 'Your changes are saved and visible to buyers.'
+              : "It's now visible to buyers across the Almari community."}
           </Text>
           <TouchableOpacity
             style={s.successBtn}
@@ -420,7 +547,7 @@ export default function ListReview() {
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
             <IconChevronLeft size={22} color={theme.text} />
           </TouchableOpacity>
-          <Text style={s.title}>Review your listing</Text>
+          <Text style={s.title}>{isEditMode ? 'Review changes' : 'Review your listing'}</Text>
           <View style={{ width: 34 }} />
         </View>
 
@@ -574,7 +701,7 @@ export default function ListReview() {
           {submitting ? (
             <ActivityIndicator color={theme.accentText} />
           ) : (
-            <Text style={s.listBtnText}>List it</Text>
+            <Text style={s.listBtnText}>{isEditMode ? 'Save changes' : 'List it'}</Text>
           )}
         </TouchableOpacity>
       </View>
