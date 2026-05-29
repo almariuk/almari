@@ -1,6 +1,11 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+// splash is a valid Expo config key but missing from ExpoConfig typedefs in SDK 56
+type ExpoConfigWithSplash = ExpoConfig & {
+  splash?: { image?: string; resizeMode?: string; backgroundColor?: string }
+}
+
+export default ({ config }: ConfigContext): ExpoConfigWithSplash => ({
   ...config,
   name: process.env.EXPO_PUBLIC_BRAND_NAME ?? 'Almari',
   slug: 'almari',

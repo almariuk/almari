@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { IconArrowLeft, IconInfoCircle } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
@@ -35,6 +36,7 @@ export default function PaymentDetails() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const queryClient = useQueryClient()
   const cleanRevolut = (v: string) => v.startsWith('@') ? v.slice(1) : v
 
   const hasAtLeastOne = paypal.trim().length > 0 || revolut.trim().length > 0
@@ -75,9 +77,10 @@ export default function PaymentDetails() {
       return
     }
 
-    if (data && profile) {
-      setProfile({ ...profile, payment_instructions: (data as any).payment_instructions, bank_details_provided: true } as any)
+    if (profile) {
+      setProfile({ ...profile, payment_instructions: payload, bank_details_provided: true } as any)
     }
+    queryClient.invalidateQueries({ queryKey: ['listing_detail'] })
 
     setSaved(true)
   }

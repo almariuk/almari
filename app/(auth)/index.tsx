@@ -285,7 +285,9 @@ const s = StyleSheet.create({
     backgroundColor: '#513D66',
     borderRadius: 12,
     paddingVertical: 15,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    alignSelf: 'stretch',
     borderWidth: 1,
     borderColor: '#DDB86C',
   },
@@ -293,7 +295,6 @@ const s = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'AvenirNext-DemiBold' : 'Inter_600SemiBold',
     fontSize: 16,
     color: '#FEF9E7',
-    letterSpacing: 0.5,
   },
   btnGhost: {
     alignItems: 'center',

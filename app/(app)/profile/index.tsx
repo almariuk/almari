@@ -562,10 +562,10 @@ export default function Profile() {
         {/* Payment details */}
         <SectionCard title="Payment details">
           <NavRow
-            label={profile?.bank_details_provided ? 'Payment details saved' : 'Set up payment details'}
-            sublabel={profile?.bank_details_provided ? 'Buyers can pay you' : 'Required before you can sell'}
+            label={(profile as any)?.payment_instructions ? 'Payment details saved' : 'Set up payment details'}
+            sublabel={(profile as any)?.payment_instructions ? 'Buyers can pay you' : 'Required before you can sell'}
             onPress={() => router.push('/profile/bank-details')}
-            badge={profile?.bank_details_provided ? 'connected' : 'pending'}
+            badge={(profile as any)?.payment_instructions ? 'connected' : 'pending'}
           />
         </SectionCard>
 
