@@ -168,16 +168,18 @@ export default function MyPurchases() {
                 contentFit="cover"
               />
               <View style={s.rowBody}>
-                <Text style={[s.itemName, { color: theme.text, fontFamily: 'CormorantGaramond_700Bold' }]} numberOfLines={1}>
-                  {item.itemName}
-                </Text>
-                <Text style={[s.counterparty, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]} numberOfLines={1}>
-                  from {item.sellerName}
-                </Text>
-                <View style={s.rowBottom}>
-                  <Text style={[s.price, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
-                    {formatGbp(item.total_paid_pence)}
-                  </Text>
+                <View style={s.rowMain}>
+                  <View style={s.rowLeft}>
+                    <Text style={[s.itemName, { color: theme.text, fontFamily: 'CormorantGaramond_700Bold' }]} numberOfLines={1}>
+                      {item.itemName}
+                    </Text>
+                    <Text style={[s.counterparty, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]} numberOfLines={1}>
+                      from {item.sellerName}
+                    </Text>
+                    <Text style={[s.price, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+                      {formatGbp(item.total_paid_pence)}
+                    </Text>
+                  </View>
                   <View style={s.rightCol}>
                     <View style={[s.statusBadge, { borderColor: statusColour(item.status, theme) }]}>
                       <Text style={[s.statusText, { color: statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
@@ -245,10 +247,11 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       height: 80,
       borderRadius: 8,
     },
-    rowBody:      { flex: 1, gap: 3 },
+    rowBody:      { flex: 1 },
+    rowMain:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+    rowLeft:      { flex: 1, gap: 3 },
     itemName:     { fontSize: 18, lineHeight: 22 },
     counterparty: { fontSize: 12 },
-    rowBottom:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 2 },
     price:        { fontSize: 15, marginTop: 2 },
     rightCol:     { alignItems: 'flex-end', gap: 3 },
     statusBadge:  { borderRadius: 4, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2 },
