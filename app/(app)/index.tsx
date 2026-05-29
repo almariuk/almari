@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/auth'
 import { useFeedListings } from '@/hooks/useFeedListings'
 import { getFitLabel, applyFitsMe } from '@/utils/fit'
 import { FeedList } from '@/components/listings/FeedList'
+import AlmariIcon from '@/components/brand/AlmariIcon'
 import type { FeedItem } from '@/types/feed'
 
 export default function Home() {
@@ -96,14 +97,7 @@ export default function Home() {
     >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text
-          style={[
-            styles.wordmark,
-            { color: theme.accent, fontFamily: 'CormorantGaramond_700Bold' },
-          ]}
-        >
-          almari
-        </Text>
+        <AlmariIcon size={36} />
         <TouchableOpacity
           onPress={() => router.push('/(app)/notifications')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
