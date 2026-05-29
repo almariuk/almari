@@ -17,7 +17,7 @@ function formatGbp(pence: number): string {
 
 function useDefaultAddress(identityId: string) {
   return useQuery<UserAddressRow | null>({
-    queryKey: ['user_addresses', identityId],
+    queryKey: ['user_default_address', identityId],
     enabled: !!identityId,
     queryFn: async () => {
       const { data } = await supabase
