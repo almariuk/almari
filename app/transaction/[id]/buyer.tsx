@@ -347,7 +347,7 @@ export default function BuyerOrderDetail() {
               {order.buyerPaymentClaimedAt ? 'PAYMENT SENT' : 'PAYMENT DUE'}
             </Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              {paySecondsLeft !== null && (
+              {paySecondsLeft !== null && !order.buyerPaymentClaimedAt && (
                 <View style={[s.countdownRow, {
                   backgroundColor: paySecondsLeft <= 120 ? theme.error + '15' : theme.gold + '15',
                   borderColor: paySecondsLeft <= 120 ? theme.error : theme.gold,

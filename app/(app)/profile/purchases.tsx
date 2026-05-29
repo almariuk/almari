@@ -53,6 +53,7 @@ interface TxRow {
   total_paid_pence: number
   payment_reference: string | null
   created_at: string
+  buyer_payment_claimed_at: string | null
   sellerName: string
   itemName: string
   photoUrl: string | null
@@ -66,7 +67,7 @@ function usePurchases(userId: string) {
       const { data, error } = await (supabase as any)
         .from('transactions')
         .select(`
-          id, status, total_paid_pence, payment_reference, created_at,
+          id, status, total_paid_pence, payment_reference, created_at, buyer_payment_claimed_at,
           seller:user_identity!seller_id ( first_name, last_name_initial ),
           listing:listings!listing_id (
             subcategories ( name ),
@@ -88,6 +89,7 @@ function usePurchases(userId: string) {
           total_paid_pence: row.total_paid_pence,
           payment_reference: row.payment_reference,
           created_at: row.created_at,
+          buyer_payment_claimed_at: row.buyer_payment_claimed_at,
           sellerName: seller ? `${seller.first_name} ${seller.last_name_initial}.` : 'Seller',
           itemName: row.listing?.subcategories?.name ?? 'Item',
           photoUrl: primaryPhoto?.url ?? null,
@@ -183,10 +185,12 @@ export default function MyPurchases() {
                   <View style={s.rightCol}>
                     <View style={[s.statusBadge, { borderColor: statusColour(item.status, theme) }]}>
                       <Text style={[s.statusText, { color: statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
-                        {STATUS_LABELS[item.status] ?? item.status}
+                        {item.status === 'pending_payment' && item.buyer_payment_claimed_at
+                          ? 'Payment sent'
+                          : STATUS_LABELS[item.status] ?? item.status}
                       </Text>
                     </View>
-                    {item.status === 'pending_payment' && (() => {
+                    {item.status === 'pending_payment' && !item.buyer_payment_claimed_at && (() => {
                       const minsLeft = Math.max(0, Math.floor((new Date(item.created_at).getTime() + 20 * 60 * 1000 - Date.now()) / 60000))
                       return (
                         <Text style={[s.payTimer, { color: minsLeft > 0 ? theme.gold : theme.error, fontFamily: 'Inter_400Regular' }]}>
