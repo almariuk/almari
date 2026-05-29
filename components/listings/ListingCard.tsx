@@ -102,17 +102,17 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           </Text>
         )}
 
-        {/* Size / age — shown upfront */}
-        {(data.measurements?.labelSize || data.measurements?.ageFromYears != null) && (
-          <Text
-            style={[s.sizeLine, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}
-            numberOfLines={1}
-          >
-            {data.measurements?.ageFromYears != null
-              ? `${data.measurements.ageFromYears}–${data.measurements.ageToYears} yrs`
-              : `Size ${data.measurements?.labelSize}`}
-          </Text>
-        )}
+        {/* Size / age — always rendered so all cards have equal height */}
+        <Text
+          style={[s.sizeLine, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}
+          numberOfLines={1}
+        >
+          {data.measurements?.ageFromYears != null
+            ? `${data.measurements.ageFromYears}–${data.measurements.ageToYears} yrs`
+            : data.measurements?.labelSize
+            ? `Size ${data.measurements.labelSize}`
+            : ''}
+        </Text>
 
         {/* Condition */}
         <Text
