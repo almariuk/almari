@@ -390,7 +390,7 @@ export default function ListingDetail() {
 
       {/* Bottom price + action bar */}
       <View style={[s.bottomBar, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-        {isSeller ? (
+        {isSeller && listing.status === 'active' ? (
           <TouchableOpacity
             style={[s.buyBtn, s.editBtn, { backgroundColor: theme.accent, opacity: editLoading ? 0.7 : 1 }]}
             onPress={async () => {
