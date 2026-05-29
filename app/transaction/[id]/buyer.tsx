@@ -260,7 +260,7 @@ export default function BuyerOrderDetail() {
   }
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       {/* Nav */}
       <View style={[s.nav, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
