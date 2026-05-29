@@ -5,7 +5,7 @@
 - **URL:** `https://smvyzzwzzrnznazygyqt.supabase.co`
 - **Anon key:** `sb_publishable_IH7Mt3vHerSJtFFAkRmtNQ_A49HwtYV`
 - **Service role key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtdnl6end6enJuem5henlneXF0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTQ0NjI5NiwiZXhwIjoyMDk1MDIyMjk2fQ.WS5IfnTA2DgmwKliQa-mtINmXpKo4GyCYxm3zve-qeo`
-- **Personal access token (CLI / Management API):** not stored in repo — ask the user to provide it when needed (format: `sbp_...`)
+- **Personal access token (CLI / Management API):** cached at `~/.supabase/access-token` — no need to ask the user. Run migrations with `npx supabase db push`.
 
 Use the service role key for any DB writes (bypasses RLS). Use the anon key for reads only. Use the personal access token with `npx supabase` CLI or the Management API (`https://api.supabase.com/v1/projects/smvyzzwzzrnznazygyqt/...`). Never write these to a file on disk — pass inline in curl commands.
 
@@ -24,8 +24,8 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 
 ### Phase 1 — Get to TestFlight
 - [x] P1: Fix pre-existing TypeScript errors — `profile/index.tsx`, `_layout.tsx`, `list/review.tsx` (Supabase type-gen, `.insert()`/`.update()` returning `never`)
-- [ ] P2: Set EAS secrets — `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] P3: Verify `eas.json` and `app.config.ts` — build profiles, bundle IDs, signing certs
+- [x] P2: Set EAS secrets — `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- [x] P3: Verify `eas.json` and `app.config.ts` — build profiles, bundle IDs, signing certs
 - [ ] P4: EAS build iOS → TestFlight internal track
 - [ ] P5: EAS build Android → Play Store internal testing track
 - [x] P6: 3 remaining DB migrations — `listings.reserved_until`, `listings.parent_listing_id`, `transactions.cancellation_reason`, `trust_events` table + RLS policy
@@ -48,7 +48,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [x] Step 6: S24 Order detail, seller view (`app/transaction/[id]/seller.tsx`) — confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed states
 - [x] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`. Email notification (atulblal@gmail.com) is Phase 3 T7.
 - [x] Step 8: S26 Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — both parties confirm, status → `refunded`, manual Almari refund
-- [ ] Step 9: Trust score events on completion — sale completed (+5), purchase completed (+3), concern upheld (−10)
+- [x] Step 9: Trust score events on completion — DB trigger writes `sale_completed` (+3) for seller and `purchase_completed` (+2) for buyer on every `completed` transition, updates `trust_score_cached`. Concern upheld (−10) is manual admin action.
 
 ### Phase 3 — Stripe + Sendcloud (post-launch, when transaction volume justifies it)
 - [ ] S1: Replace payment instructions screen with Stripe payment sheet on S12
@@ -220,7 +220,7 @@ When a new feature or change is requested, reason about the full system impact f
 - **S26 Lost in post** — `app/transaction/[id]/lost-in-post.tsx` is a stub. Both parties confirm, status → `refunded`.
 - **Step 9: Trust events** — sale completed (+5), purchase completed (+3), concern upheld (−10). No trust_events rows written yet.
 - **Buy Now guard** — disable Buy Now if seller has no payment details set (`payment_instructions IS NULL`).
-- **GDPR delete account** — required before App Store submission.
+- **GDPR delete account** — done. App-side checks block deletion if active listings or open orders exist. Anonymises `user_identity` + `user_profile`, then signs out. `auth.users` row deletion is a manual founder task.
 
 ---
 
