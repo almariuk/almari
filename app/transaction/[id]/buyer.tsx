@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconCopy, IconCheck } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -26,7 +26,9 @@ interface OrderDetail {
   concernRaisedAt: string | null
   createdAt: string
   sellerName: string
-  sellerPaymentInstructions: string | null
+  sellerFirstName: string
+  sellerPaypal: string | null
+  sellerRevolut: string | null
   itemName: string
   photoUrl: string | null
 }
@@ -64,6 +66,19 @@ function useOrderDetail(transactionId: string, buyerId: string) {
       const photos: any[] = Array.isArray(row.listing?.listing_photos) ? row.listing.listing_photos : []
       const primaryPhoto = photos.sort((a: any, b: any) => a.display_order - b.display_order)[0]
 
+      let sellerPaypal: string | null = null
+      let sellerRevolut: string | null = null
+      const raw: string | null = sellerProfile?.payment_instructions ?? null
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          sellerPaypal = parsed.paypal ?? null
+          sellerRevolut = parsed.revolut ?? null
+        } catch {
+          sellerPaypal = raw
+        }
+      }
+
       return {
         id: row.id,
         status: row.status,
@@ -78,7 +93,9 @@ function useOrderDetail(transactionId: string, buyerId: string) {
         concernRaisedAt: row.concern_raised_at,
         createdAt: row.created_at,
         sellerName: seller ? `${seller.first_name} ${seller.last_name_initial}.` : 'Seller',
-        sellerPaymentInstructions: sellerProfile?.payment_instructions ?? null,
+        sellerFirstName: seller?.first_name ?? 'the seller',
+        sellerPaypal,
+        sellerRevolut,
         itemName: row.listing?.subcategories?.name ?? 'Item',
         photoUrl: primaryPhoto?.url ?? null,
       }
@@ -293,17 +310,38 @@ export default function BuyerOrderDetail() {
             <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>PAYMENT DUE</Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Text style={[s.payNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                Transfer {formatGbp(order.totalPaidPence)} to {order.sellerName} using the reference below.
+                Transfer {formatGbp(order.totalPaidPence)} to {order.sellerFirstName} and include this reference:
               </Text>
               <TouchableOpacity style={[s.refBox, { borderColor: theme.accent }]} onPress={handleCopy} activeOpacity={0.7}>
                 <Text style={[s.refText, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>{order.paymentReference}</Text>
                 {copied ? <IconCheck size={16} color={theme.accent} /> : <IconCopy size={16} color={theme.accent} />}
               </TouchableOpacity>
-              {order.sellerPaymentInstructions && (
-                <Text style={[s.payInstructions, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
-                  {order.sellerPaymentInstructions}
-                </Text>
+
+              {order.sellerPaypal && (
+                <View style={[s.methodBlock, { borderColor: theme.border }]}>
+                  <Text style={[s.methodLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>PAYPAL</Text>
+                  <Text style={[s.methodValue, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>{order.sellerPaypal}</Text>
+                  <View style={[s.ffHint, { backgroundColor: theme.gold + '15', borderColor: theme.gold }]}>
+                    <IconInfoCircle size={13} color={theme.gold} />
+                    <Text style={[s.ffText, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>Send as Friends &amp; Family</Text>
+                  </View>
+                </View>
               )}
+
+              {order.sellerPaypal && order.sellerRevolut && (
+                <Text style={[s.orDivider, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>— or —</Text>
+              )}
+
+              {order.sellerRevolut && (
+                <View style={[s.methodBlock, { borderColor: theme.border }]}>
+                  <Text style={[s.methodLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>REVOLUT</Text>
+                  <Text style={[s.methodValue, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>@{order.sellerRevolut}</Text>
+                </View>
+              )}
+
+              <Text style={[s.payNote, { color: theme.textDisabled, fontFamily: 'Inter_400Regular', marginTop: 8 }]}>
+                Once {order.sellerFirstName} receives payment they will confirm it and your order will progress.
+              </Text>
             </View>
           </>
         )}
@@ -428,10 +466,16 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     sectionLabel: { fontSize: 10, letterSpacing: 0.8, marginBottom: 8 },
 
-    payNote:         { fontSize: 13, lineHeight: 20, marginBottom: 12 },
-    refBox:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
-    refText:         { fontSize: 18, letterSpacing: 0.8 },
-    payInstructions: { fontSize: 13, lineHeight: 20 },
+    payNote:    { fontSize: 13, lineHeight: 20, marginBottom: 12 },
+    refBox:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
+    refText:    { fontSize: 18, letterSpacing: 0.8 },
+
+    methodBlock: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8 },
+    methodLabel: { fontSize: 10, letterSpacing: 0.8, marginBottom: 4 },
+    methodValue: { fontSize: 15, marginBottom: 8 },
+    ffHint:      { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 },
+    ffText:      { fontSize: 12 },
+    orDivider:   { textAlign: 'center', fontSize: 12, marginVertical: 6 },
 
     trackingLabel:  { fontSize: 12, marginBottom: 4 },
     trackingNumber: { fontSize: 16, marginBottom: 4 },
