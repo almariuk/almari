@@ -178,27 +178,25 @@ export default function MyPurchases() {
                   <Text style={[s.price, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
                     {formatGbp(item.total_paid_pence)}
                   </Text>
-                  <Text style={[s.date, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
-                    {fmtDate(item.created_at)}
-                  </Text>
-                </View>
-                <View style={[s.statusBadge, { borderColor: statusColour(item.status, theme) }]}>
-                  <Text style={[s.statusText, { color: statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
-                    {STATUS_LABELS[item.status] ?? item.status}
-                  </Text>
-                </View>
-                {item.status === 'pending_payment' && (() => {
-                  const minsLeft = Math.max(0, Math.floor((new Date(item.created_at).getTime() + 20 * 60 * 1000 - Date.now()) / 60000))
-                  return minsLeft > 0 ? (
-                    <Text style={[s.payTimer, { color: theme.gold, fontFamily: 'Inter_400Regular' }]}>
-                      {minsLeft}m left to pay
+                  <View style={s.rightCol}>
+                    <View style={[s.statusBadge, { borderColor: statusColour(item.status, theme) }]}>
+                      <Text style={[s.statusText, { color: statusColour(item.status, theme), fontFamily: 'Inter_500Medium' }]}>
+                        {STATUS_LABELS[item.status] ?? item.status}
+                      </Text>
+                    </View>
+                    {item.status === 'pending_payment' && (() => {
+                      const minsLeft = Math.max(0, Math.floor((new Date(item.created_at).getTime() + 20 * 60 * 1000 - Date.now()) / 60000))
+                      return (
+                        <Text style={[s.payTimer, { color: minsLeft > 0 ? theme.gold : theme.error, fontFamily: 'Inter_400Regular' }]}>
+                          {minsLeft > 0 ? `${minsLeft}m left` : 'Expired'}
+                        </Text>
+                      )
+                    })()}
+                    <Text style={[s.date, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
+                      {fmtDate(item.created_at)}
                     </Text>
-                  ) : (
-                    <Text style={[s.payTimer, { color: theme.error, fontFamily: 'Inter_400Regular' }]}>
-                      Reservation expired
-                    </Text>
-                  )
-                })()}
+                  </View>
+                </View>
               </View>
             </TouchableOpacity>
           )}
@@ -250,12 +248,13 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     rowBody:      { flex: 1, gap: 3 },
     itemName:     { fontSize: 18, lineHeight: 22 },
     counterparty: { fontSize: 12 },
-    rowBottom:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
-    price:        { fontSize: 15 },
-    date:         { fontSize: 11 },
-    statusBadge:  { alignSelf: 'flex-start', borderRadius: 4, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4 },
+    rowBottom:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 2 },
+    price:        { fontSize: 15, marginTop: 2 },
+    rightCol:     { alignItems: 'flex-end', gap: 3 },
+    statusBadge:  { borderRadius: 4, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2 },
     statusText:   { fontSize: 11 },
-    payTimer:     { fontSize: 11, marginTop: 3 },
+    payTimer:     { fontSize: 11 },
+    date:         { fontSize: 11 },
 
     emptyText:    { textAlign: 'center', fontSize: 18, paddingTop: 60, paddingHorizontal: 32 },
   })
