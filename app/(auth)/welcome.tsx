@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Brand } from '@/constants/brand';
 import { MeasurementsForm, type MeasurementValues } from '@/components/profile/MeasurementsForm';
+import AlmariLogoFull from '@/components/brand/AlmariLogoFull';
 import type { UserIdentity, UserProfile } from '@/types/database';
 
 export default function Welcome() {
@@ -126,7 +127,9 @@ export default function Welcome() {
 
             {/* ── Header ─────────────────────────────────────── */}
             <View style={s.headerArea}>
-              <Text style={s.heading}>Welcome to {Brand.name}</Text>
+              <View style={s.logoWrap}>
+                <AlmariLogoFull size={200} />
+              </View>
               <Text style={s.subheading}>What shall we call you?</Text>
             </View>
 
@@ -239,13 +242,8 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     scroll:   { flexGrow: 1 },
     inner:    { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40 },
 
-    headerArea: { marginBottom: 28 },
-    heading: {
-      fontFamily: 'CormorantGaramond_700Bold',
-      fontSize: 34,
-      color: theme.text,
-      marginBottom: 6,
-    },
+    headerArea: { marginBottom: 28, alignItems: 'center' },
+    logoWrap: { marginBottom: 12 },
     subheading: {
       fontFamily: 'Inter_400Regular',
       fontSize: 15,

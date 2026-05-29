@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AlmariIcon from '@/components/brand/AlmariIcon';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -127,6 +129,16 @@ export default function RootLayout() {
     }
   }, [session, identity, identityLoading, segments, initialized, fontsLoaded, fontError, fontTimedOut]);
 
+  const ready = initialized && (fontsLoaded || fontError || fontTimedOut);
+
+  if (!ready) {
+    return (
+      <View style={splash.root}>
+        <AlmariIcon size={80} />
+      </View>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style="auto" />
@@ -134,3 +146,12 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+const splash = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#0D1B3E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
