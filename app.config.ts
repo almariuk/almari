@@ -6,14 +6,22 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'almari',
   version: '1.0.0',
   orientation: 'portrait',
+  icon: './assets/almari-icon-1024.png',
   userInterfaceStyle: 'automatic',
+  splash: {
+    image: './assets/almari-icon-1024.png',
+    resizeMode: 'contain',
+    backgroundColor: '#0D1B3E',
+  },
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'uk.almari.app',
+    icon: './assets/almari-icon-1024.png',
   },
   android: {
     package: 'uk.almari.app',
     adaptiveIcon: {
+      foregroundImage: './assets/almari-icon-1024.png',
       backgroundColor: process.env.EXPO_PUBLIC_BRAND_PRIMARY_COLOUR ?? '#0D1B3E',
     },
   },
