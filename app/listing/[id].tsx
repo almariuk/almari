@@ -7,6 +7,8 @@ import { IconCandleFilled, IconClock } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
+import { useListingDraftStore } from '@/store/listing-draft'
+import type { ListingDraftData } from '@/store/listing-draft'
 import { useListingDetail } from '@/hooks/useListingDetail'
 import { useTrustTiers, getDiyaColour, getMaxTrustScore } from '@/hooks/useTrustTiers'
 import { getFitLabel } from '@/utils/fit'
@@ -89,6 +91,9 @@ export default function ListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { profile, identity } = useAuthStore()
   const queryClient = useQueryClient()
+  const hydrate = useListingDraftStore((st) => st.hydrate)
+  const resetDraft = useListingDraftStore((st) => st.reset)
+  const [editLoading, setEditLoading] = useState(false)
   const { data: listing, isLoading, error } = useListingDetail(id ?? '')
   const { data: tiers = [] } = useTrustTiers()
 
@@ -387,13 +392,91 @@ export default function ListingDetail() {
       <View style={[s.bottomBar, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
         {isSeller ? (
           <TouchableOpacity
-            style={[s.buyBtn, s.editBtn, { backgroundColor: theme.accent }]}
-            onPress={() => router.push(`/list/edit/${listing.id}` as any)}
+            style={[s.buyBtn, s.editBtn, { backgroundColor: theme.accent, opacity: editLoading ? 0.7 : 1 }]}
+            onPress={async () => {
+              if (editLoading) return
+              setEditLoading(true)
+              try {
+                const { data, error: fetchError } = await (supabase as any)
+                  .from('listings')
+                  .select(`
+                    id, category_id, subcategory_id, work_type_id, pattern_id, fabric_type_id,
+                    occasion_bucket_id, colour_id, condition_id, care_status_id,
+                    why_selling_copy_id, seller_motivation_type_id,
+                    set_contents, set_complete, additional_notes, asking_price_pence,
+                    listing_photos ( url, display_order ),
+                    provenance ( city_id, area_id, seller_type_id, purchase_year,
+                                 original_price_inr, original_price_approximate, is_heirloom, heirloom_story ),
+                    listing_measurements ( bust_cm, waist_cm, hips_cm, chest_cm, height_cm,
+                                          uk_shoe_size, label_size, age_from_years, age_to_years,
+                                          height_from_cm, height_to_cm ),
+                    private_seller_motivation ( motivation_type_id )
+                  `)
+                  .eq('id', listing.id)
+                  .single()
+                if (fetchError || !data) throw new Error(fetchError?.message ?? 'Load failed')
+                const photos: { url: string; display_order: number }[] = Array.isArray(data.listing_photos) ? data.listing_photos : []
+                photos.sort((a: any, b: any) => a.display_order - b.display_order)
+                const prov = Array.isArray(data.provenance) ? data.provenance[0] : data.provenance
+                const meas = Array.isArray(data.listing_measurements) ? data.listing_measurements[0] : data.listing_measurements
+                const motiv = Array.isArray(data.private_seller_motivation) ? data.private_seller_motivation[0] : data.private_seller_motivation
+                const str = (v: number | null | undefined) => v != null ? String(v) : ''
+                const draftData: ListingDraftData = {
+                  listingId: data.id,
+                  photoUris: photos.map((p: any) => p.url),
+                  categoryId: data.category_id,
+                  subcategoryId: data.subcategory_id,
+                  workTypeId: data.work_type_id ?? null,
+                  patternId: data.pattern_id ?? null,
+                  fabricTypeId: data.fabric_type_id ?? null,
+                  occasionBucketId: data.occasion_bucket_id ?? null,
+                  colourId: data.colour_id ?? null,
+                  conditionId: data.condition_id,
+                  careStatusId: data.care_status_id ?? null,
+                  whySellingCopyId: data.why_selling_copy_id ?? null,
+                  motivationTypeId: motiv?.motivation_type_id ?? null,
+                  isHeirloom: prov?.is_heirloom ?? false,
+                  heirloomStory: prov?.heirloom_story ?? '',
+                  provenanceCityId: prov?.city_id ?? null,
+                  provenanceCityOther: false,
+                  provenanceAreaId: prov?.area_id ?? null,
+                  sellerTypeId: prov?.seller_type_id ?? null,
+                  purchaseYear: prov?.purchase_year != null ? String(prov.purchase_year) : '',
+                  originalPriceInr: prov?.original_price_inr != null ? String(prov.original_price_inr) : '',
+                  originalPriceCurrency: 'INR',
+                  originalPriceApproximate: prov?.original_price_approximate ?? false,
+                  listingBustCm: str(meas?.bust_cm),
+                  listingWaistCm: str(meas?.waist_cm),
+                  listingHipsCm: str(meas?.hips_cm),
+                  listingChestCm: str(meas?.chest_cm),
+                  listingHeightCm: str(meas?.height_cm),
+                  listingUkShoeSize: str(meas?.uk_shoe_size),
+                  listingLabelSize: meas?.label_size ?? '',
+                  listingAgeFromYears: str(meas?.age_from_years),
+                  listingAgeToYears: str(meas?.age_to_years),
+                  listingHeightFromCm: str(meas?.height_from_cm),
+                  listingHeightToCm: str(meas?.height_to_cm),
+                  whatIsIncluded: data.set_contents ?? '',
+                  isSetComplete: data.set_complete ?? null,
+                  additionalNotes: data.additional_notes ?? '',
+                  askingPricePence: data.asking_price_pence ?? null,
+                }
+                resetDraft()
+                hydrate(draftData)
+                router.push('/list/step-1' as any)
+              } finally {
+                setEditLoading(false)
+              }
+            }}
             activeOpacity={0.85}
           >
-            <Text style={[s.buyBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
-              Edit listing
-            </Text>
+            {editLoading ? (
+              <ActivityIndicator color={theme.accentText} />
+            ) : (
+              <Text style={[s.buyBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
+                Edit listing
+              </Text>
+            )}
           </TouchableOpacity>
 
         ) : isReserved && !reservationExpired ? (
