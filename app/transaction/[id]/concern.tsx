@@ -63,7 +63,7 @@ export default function RaiseConcern() {
 
   if (done) {
     return (
-      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <View style={s.doneWrap}>
           <View style={[s.doneIcon, { backgroundColor: theme.accent + '18', borderColor: theme.accent }]}>
             <IconCheck size={28} color={theme.accent} />
@@ -91,7 +91,7 @@ export default function RaiseConcern() {
   if (confirming) {
     const reason = REASONS.find(r => r.id === selectedReason)
     return (
-      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <View style={[s.nav, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={() => setConfirming(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <IconArrowLeft size={22} color={theme.text} />
@@ -147,7 +147,7 @@ export default function RaiseConcern() {
   }
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       <View style={[s.nav, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <IconArrowLeft size={22} color={theme.text} />

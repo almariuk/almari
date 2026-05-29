@@ -65,7 +65,7 @@ export default function LostInPost() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <ActivityIndicator style={s.loader} color={theme.accent} size="large" />
       </SafeAreaView>
     )
@@ -73,7 +73,7 @@ export default function LostInPost() {
 
   if (error || !detail) {
     return (
-      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <View style={[s.nav, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <IconArrowLeft size={22} color={theme.text} />
@@ -128,7 +128,7 @@ export default function LostInPost() {
 
   if (bothConfirmed) {
     return (
-      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+      <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
         <View style={[s.nav, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <IconArrowLeft size={22} color={theme.text} />
@@ -161,7 +161,7 @@ export default function LostInPost() {
   }
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       <View style={[s.nav, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <IconArrowLeft size={22} color={theme.text} />

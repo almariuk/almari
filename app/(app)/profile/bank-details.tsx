@@ -86,7 +86,7 @@ export default function PaymentDetails() {
   }
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
         <View style={[s.nav, { borderBottomColor: theme.border }]}>
