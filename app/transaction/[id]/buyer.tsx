@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle, IconClock } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle, IconClock, IconChevronRight } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -32,6 +32,7 @@ interface OrderDetail {
   sellerRevolut: string | null
   itemName: string
   photoUrl: string | null
+  listingId: string | null
 }
 
 function useOrderDetail(transactionId: string, buyerId: string) {
@@ -42,7 +43,7 @@ function useOrderDetail(transactionId: string, buyerId: string) {
       const { data, error } = await (supabase as any)
         .from('transactions')
         .select(`
-          id, status, payment_reference,
+          id, status, payment_reference, listing_id,
           sale_price_pence, postage_price_pence, total_paid_pence,
           tracking_number, dispatched_at, buyer_payment_claimed_at,
           buyer_confirmed_delivered_at,
@@ -101,6 +102,7 @@ function useOrderDetail(transactionId: string, buyerId: string) {
         sellerRevolut,
         itemName: row.listing?.subcategories?.name ?? 'Item',
         photoUrl: primaryPhoto?.url ?? null,
+        listingId: row.listing_id ?? null,
       }
     },
   })
@@ -315,7 +317,11 @@ export default function BuyerOrderDetail() {
 
         {/* Item card */}
         <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <View style={s.itemRow}>
+          <TouchableOpacity
+            style={s.itemRow}
+            onPress={() => order.listingId && router.push(`/listing/${order.listingId}` as any)}
+            activeOpacity={order.listingId ? 0.7 : 1}
+          >
             <Image
               source={order.photoUrl ? { uri: order.photoUrl } : null}
               style={[s.itemPhoto, { backgroundColor: theme.background }]}
@@ -332,7 +338,8 @@ export default function BuyerOrderDetail() {
                 Ordered {fmtDate(order.createdAt)}
               </Text>
             </View>
-          </View>
+            {order.listingId && <IconChevronRight size={18} color={theme.textDisabled} style={{ alignSelf: 'center' }} />}
+          </TouchableOpacity>
           <View style={[s.divider, { backgroundColor: theme.border }]} />
           <View style={s.priceRow}>
             <Text style={[s.totalLabel, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>Total</Text>
