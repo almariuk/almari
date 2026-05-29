@@ -205,7 +205,10 @@ export default function SellerOrderDetail() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['order_seller', order.id] })
+    queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
     queryClient.invalidateQueries({ queryKey: ['my_sales'] })
+    queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+    queryClient.invalidateQueries({ queryKey: ['order_counts'] })
   }
 
   const handleConfirmPayment = () => {

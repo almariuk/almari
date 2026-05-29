@@ -189,7 +189,10 @@ export default function BuyerOrderDetail() {
     ;(supabase as any).rpc('close_concern_window', { p_transaction_id: order.id })
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+        queryClient.invalidateQueries({ queryKey: ['order_seller', order.id] })
         queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+        queryClient.invalidateQueries({ queryKey: ['my_sales'] })
+        queryClient.invalidateQueries({ queryKey: ['order_counts'] })
       })
   }, [order?.id, order?.status, order?.concernWindowClosesAt])
 
@@ -252,7 +255,10 @@ export default function BuyerOrderDetail() {
               .eq('id', order.id)
             setConfirming(false)
             queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+            queryClient.invalidateQueries({ queryKey: ['order_seller', order.id] })
             queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+            queryClient.invalidateQueries({ queryKey: ['my_sales'] })
+            queryClient.invalidateQueries({ queryKey: ['order_counts'] })
           },
         },
       ]

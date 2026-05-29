@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { IconArrowLeft } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
@@ -102,8 +102,17 @@ export default function MyPurchases() {
   const router = useRouter()
   const { identity } = useAuthStore()
   const s = makeStyles(theme)
+  const qc = useQueryClient()
   const [tab, setTab] = useState<'active' | 'done'>('active')
+  const [refreshing, setRefreshing] = useState(false)
   const { data: transactions = [], isLoading } = usePurchases(identity?.id ?? '')
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await qc.invalidateQueries({ queryKey: ['my_purchases'] })
+    await qc.invalidateQueries({ queryKey: ['order_counts'] })
+    setRefreshing(false)
+  }
 
   const filtered = useMemo(() => {
     const statuses = tab === 'active' ? ACTIVE_STATUSES : DONE_STATUSES
@@ -145,6 +154,7 @@ export default function MyPurchases() {
           keyExtractor={item => item.id}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
           ItemSeparatorComponent={() => <View style={[s.separator, { backgroundColor: theme.border }]} />}
           renderItem={({ item }) => (
             <TouchableOpacity

@@ -85,6 +85,8 @@ export default function ConfirmOrder() {
 
     queryClient.invalidateQueries({ queryKey: ['feed_listings'] })
     queryClient.invalidateQueries({ queryKey: ['listing_detail', listingId] })
+    queryClient.invalidateQueries({ queryKey: ['order_counts'] })
+    queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
     setPlacing(false)
     router.replace(`/transaction/new/payment-instructions?id=${txn.id}` as any)
   }
