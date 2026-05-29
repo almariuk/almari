@@ -8,15 +8,15 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Cancel pending_payment transactions whose 20-min window has passed
+  -- Cancel transactions whose 20-min window has passed (or reserved_until is NULL = orphaned)
   UPDATE transactions
   SET status = 'cancelled',
-      cancellation_reason = 'Payment not received within 20-minute reservation window'
-  WHERE status = 'pending_payment'
+      cancellation_reason = 'buyer_did_not_pay'
+  WHERE status IN ('pending_payment', 'held')
     AND listing_id IN (
       SELECT id FROM listings
       WHERE status = 'reserved'
-        AND reserved_until < NOW()
+        AND (reserved_until < NOW() OR reserved_until IS NULL)
     );
 
   -- Revert those listings back to active
@@ -24,7 +24,7 @@ BEGIN
   SET status = 'active',
       reserved_until = NULL
   WHERE status = 'reserved'
-    AND reserved_until < NOW();
+    AND (reserved_until < NOW() OR reserved_until IS NULL);
 END;
 $$;
 
