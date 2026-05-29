@@ -320,22 +320,12 @@ export default function SellerOrderDetail() {
                 <Text style={{ fontFamily: 'Inter_600SemiBold', color: theme.text }}>{order.paymentReference}</Text>.
                 Once received, confirm below.
               </Text>
-              {order.deliveryAddress && (
-                <View style={[s.deliveryBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
-                  <Text style={[s.deliveryLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>DELIVER TO</Text>
-                  <Text style={[s.deliveryLine, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
-                    {order.deliveryAddress.line1}{order.deliveryAddress.line2 ? `, ${order.deliveryAddress.line2}` : ''}
-                  </Text>
-                  <Text style={[s.deliveryLine, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
-                    {order.deliveryAddress.city}, {order.deliveryAddress.postcode}
-                  </Text>
-                  {order.deliveryAddress.phone && (
-                    <Text style={[s.deliveryLine, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
-                      {order.deliveryAddress.phone}
-                    </Text>
-                  )}
-                </View>
-              )}
+              <View style={[s.deliveryBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <Text style={[s.deliveryLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>DELIVER TO</Text>
+                <Text style={[s.deliveryLine, { color: theme.textDisabled, fontFamily: 'Inter_400Regular_Italic' }]}>
+                  Address will show here once payment is confirmed
+                </Text>
+              </View>
               <TouchableOpacity
                 style={[s.actionBtn, { backgroundColor: theme.accent }]}
                 onPress={handleConfirmPayment}
