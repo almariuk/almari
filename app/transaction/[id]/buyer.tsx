@@ -388,8 +388,19 @@ export default function BuyerOrderDetail() {
       </ScrollView>
 
       {/* Action buttons */}
-      {(canConfirmDelivery || canRaiseConcern) && (
+      {(order.status === 'pending_payment' || canConfirmDelivery || canRaiseConcern) && (
         <View style={[s.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+          {order.status === 'pending_payment' && (
+            <TouchableOpacity
+              style={[s.actionBtn, { backgroundColor: theme.accent }]}
+              onPress={() => router.replace('/' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={[s.actionBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
+                Done — I've sent payment
+              </Text>
+            </TouchableOpacity>
+          )}
           {canConfirmDelivery && (
             <TouchableOpacity
               style={[s.actionBtn, { backgroundColor: theme.accent }]}
