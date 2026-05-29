@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AlmariIcon from '@/components/brand/AlmariIcon';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -22,6 +22,11 @@ import * as Linking from 'expo-linking';
 import { useAuthStore } from '@/store/auth';
 import { supabase } from '@/lib/supabase';
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+focusManager.setEventListener(onFocus => {
+  const sub = AppState.addEventListener('change', state => onFocus(state === 'active'))
+  return () => sub.remove()
+})
 
 const queryClient = new QueryClient();
 
