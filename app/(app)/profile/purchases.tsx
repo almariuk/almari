@@ -187,6 +187,18 @@ export default function MyPurchases() {
                     {STATUS_LABELS[item.status] ?? item.status}
                   </Text>
                 </View>
+                {item.status === 'pending_payment' && (() => {
+                  const minsLeft = Math.max(0, Math.floor((new Date(item.created_at).getTime() + 20 * 60 * 1000 - Date.now()) / 60000))
+                  return minsLeft > 0 ? (
+                    <Text style={[s.payTimer, { color: theme.gold, fontFamily: 'Inter_400Regular' }]}>
+                      {minsLeft}m left to pay
+                    </Text>
+                  ) : (
+                    <Text style={[s.payTimer, { color: theme.error, fontFamily: 'Inter_400Regular' }]}>
+                      Reservation expired
+                    </Text>
+                  )
+                })()}
               </View>
             </TouchableOpacity>
           )}
@@ -243,6 +255,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     date:         { fontSize: 11 },
     statusBadge:  { alignSelf: 'flex-start', borderRadius: 4, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4 },
     statusText:   { fontSize: 11 },
+    payTimer:     { fontSize: 11, marginTop: 3 },
 
     emptyText:    { textAlign: 'center', fontSize: 18, paddingTop: 60, paddingHorizontal: 32 },
   })

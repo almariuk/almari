@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Clipboard } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle, IconClock } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -167,6 +167,12 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function formatCountdown(secs: number): string {
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 // ── Screen ────────────────────────────────────────────────────
 
 export default function BuyerOrderDetail() {
@@ -180,6 +186,27 @@ export default function BuyerOrderDetail() {
   const { data: order, isLoading, error } = useOrderDetail(id ?? '', identity?.id ?? '')
   const [confirming, setConfirming] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [paySecondsLeft, setPaySecondsLeft] = useState<number | null>(null)
+  const payExpiredRef = useRef(false)
+
+  useEffect(() => {
+    if (!order || order.status !== 'pending_payment') { setPaySecondsLeft(null); return }
+    const expiry = new Date(order.createdAt).getTime() + 20 * 60 * 1000
+    const calc = () => Math.max(0, Math.floor((expiry - Date.now()) / 1000))
+    setPaySecondsLeft(calc())
+    payExpiredRef.current = false
+    const timer = setInterval(() => {
+      const left = calc()
+      setPaySecondsLeft(left)
+      if (left === 0 && !payExpiredRef.current) {
+        payExpiredRef.current = true
+        queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+        queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+        queryClient.invalidateQueries({ queryKey: ['order_counts'] })
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [order?.id, order?.status, order?.createdAt])
 
   // Lazily close concern window when buyer views this screen after window expires
   useEffect(() => {
@@ -315,6 +342,22 @@ export default function BuyerOrderDetail() {
           <>
             <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>PAYMENT DUE</Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              {paySecondsLeft !== null && (
+                <View style={[s.countdownRow, {
+                  backgroundColor: paySecondsLeft <= 120 ? theme.error + '15' : theme.gold + '15',
+                  borderColor: paySecondsLeft <= 120 ? theme.error : theme.gold,
+                }]}>
+                  <IconClock size={14} color={paySecondsLeft <= 120 ? theme.error : theme.gold} />
+                  <Text style={[s.countdownText, {
+                    color: paySecondsLeft <= 120 ? theme.error : theme.gold,
+                    fontFamily: 'Inter_600SemiBold',
+                  }]}>
+                    {paySecondsLeft > 0
+                      ? `${formatCountdown(paySecondsLeft)} left to pay — item reserved for you`
+                      : 'Reservation expired — item may no longer be available'}
+                  </Text>
+                </View>
+              )}
               <Text style={[s.payNote, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
                 Transfer {formatGbp(order.totalPaidPence)} to {order.sellerFirstName} and include this reference:
               </Text>
@@ -482,6 +525,9 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     totalValue: { fontSize: 15 },
 
     sectionLabel: { fontSize: 10, letterSpacing: 0.8, marginBottom: 8 },
+
+    countdownRow: { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 14 },
+    countdownText: { flex: 1, fontSize: 13, lineHeight: 18 },
 
     payNote:    { fontSize: 13, lineHeight: 20, marginBottom: 12 },
     refBox:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
