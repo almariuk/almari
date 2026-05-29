@@ -254,8 +254,9 @@ export default function BuyerOrderDetail() {
   const withinConcernWindow = order.concernWindowClosesAt != null
     && new Date(order.concernWindowClosesAt) > new Date()
 
-  const canConfirmDelivery = order.status === 'dispatched' && !order.buyerConfirmedDeliveredAt
-  const canRaiseConcern   = order.status === 'delivered' && withinConcernWindow && !order.concernRaisedAt
+  const canConfirmDelivery  = order.status === 'dispatched' && !order.buyerConfirmedDeliveredAt
+  const canRaiseConcern     = order.status === 'delivered' && withinConcernWindow && !order.concernRaisedAt
+  const canResolveConcern   = order.status === 'concern_open'
 
   const handleCopy = () => {
     if (!order.paymentReference) return
@@ -284,6 +285,32 @@ export default function BuyerOrderDetail() {
                 concern_window_started_at: now.toISOString(),
                 concern_window_closes_at: windowCloses.toISOString(),
               })
+              .eq('id', order.id)
+            setConfirming(false)
+            queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+            queryClient.invalidateQueries({ queryKey: ['order_seller', order.id] })
+            queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
+            queryClient.invalidateQueries({ queryKey: ['my_sales'] })
+            queryClient.invalidateQueries({ queryKey: ['order_counts'] })
+          },
+        },
+      ]
+    )
+  }
+
+  const handleResolveConcern = () => {
+    Alert.alert(
+      'Mark concern resolved?',
+      'This will mark your order as complete. Only do this if Almari has confirmed your concern has been resolved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark complete',
+          onPress: async () => {
+            setConfirming(true)
+            await (supabase as any)
+              .from('transactions')
+              .update({ status: 'completed' })
               .eq('id', order.id)
             setConfirming(false)
             queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
@@ -449,7 +476,7 @@ export default function BuyerOrderDetail() {
       </ScrollView>
 
       {/* Action buttons */}
-      {(order.status === 'pending_payment' || canConfirmDelivery || canRaiseConcern) && (
+      {(order.status === 'pending_payment' || canConfirmDelivery || canRaiseConcern || canResolveConcern) && (
         <View style={[s.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
           {order.status === 'pending_payment' && !order.buyerPaymentClaimedAt && (
             <TouchableOpacity
@@ -505,6 +532,21 @@ export default function BuyerOrderDetail() {
               <Text style={[s.actionBtnText, { color: theme.error, fontFamily: 'Inter_600SemiBold' }]}>
                 Raise a concern
               </Text>
+            </TouchableOpacity>
+          )}
+          {canResolveConcern && (
+            <TouchableOpacity
+              style={[s.actionBtn, { backgroundColor: theme.accent, opacity: confirming ? 0.7 : 1 }]}
+              onPress={handleResolveConcern}
+              disabled={confirming}
+              activeOpacity={0.85}
+            >
+              {confirming
+                ? <ActivityIndicator color={theme.accentText} size="small" />
+                : <Text style={[s.actionBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>
+                    Concern resolved — mark complete
+                  </Text>
+              }
             </TouchableOpacity>
           )}
         </View>
