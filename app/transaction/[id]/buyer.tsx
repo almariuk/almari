@@ -21,6 +21,7 @@ interface OrderDetail {
   totalPaidPence: number
   trackingNumber: string | null
   dispatchedAt: string | null
+  buyerPaymentClaimedAt: string | null
   buyerConfirmedDeliveredAt: string | null
   concernWindowClosesAt: string | null
   concernRaisedAt: string | null
@@ -43,7 +44,8 @@ function useOrderDetail(transactionId: string, buyerId: string) {
         .select(`
           id, status, payment_reference,
           sale_price_pence, postage_price_pence, total_paid_pence,
-          tracking_number, dispatched_at, buyer_confirmed_delivered_at,
+          tracking_number, dispatched_at, buyer_payment_claimed_at,
+          buyer_confirmed_delivered_at,
           concern_window_closes_at, concern_raised_at, created_at,
           seller:user_identity!seller_id (
             first_name, last_name_initial,
@@ -88,6 +90,7 @@ function useOrderDetail(transactionId: string, buyerId: string) {
         totalPaidPence: row.total_paid_pence,
         trackingNumber: row.tracking_number,
         dispatchedAt: row.dispatched_at,
+        buyerPaymentClaimedAt: row.buyer_payment_claimed_at,
         buyerConfirmedDeliveredAt: row.buyer_confirmed_delivered_at,
         concernWindowClosesAt: row.concern_window_closes_at,
         concernRaisedAt: row.concern_raised_at,
@@ -340,7 +343,9 @@ export default function BuyerOrderDetail() {
         {/* Payment reminder — only while awaiting payment */}
         {order.status === 'pending_payment' && (
           <>
-            <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>PAYMENT DUE</Text>
+            <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>
+              {order.buyerPaymentClaimedAt ? 'PAYMENT SENT' : 'PAYMENT DUE'}
+            </Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               {paySecondsLeft !== null && (
                 <View style={[s.countdownRow, {
@@ -439,14 +444,20 @@ export default function BuyerOrderDetail() {
       {/* Action buttons */}
       {(order.status === 'pending_payment' || canConfirmDelivery || canRaiseConcern) && (
         <View style={[s.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-          {order.status === 'pending_payment' && (
+          {order.status === 'pending_payment' && !order.buyerPaymentClaimedAt && (
             <TouchableOpacity
               style={[s.actionBtn, { backgroundColor: theme.accent }]}
-              onPress={() => {
+              onPress={async () => {
+                await (supabase as any)
+                  .from('transactions')
+                  .update({ buyer_payment_claimed_at: new Date().toISOString() })
+                  .eq('id', order.id)
+                queryClient.invalidateQueries({ queryKey: ['order_buyer', order.id] })
+                queryClient.invalidateQueries({ queryKey: ['my_purchases'] })
                 Alert.alert(
                   'Thanks for sending payment!',
-                  `Once ${order.sellerFirstName} confirms they've received it, your order will progress automatically. Keep your reference handy: ${order.paymentReference}`,
-                  [{ text: 'Done', onPress: () => router.replace('/' as any) }]
+                  `Once ${order.sellerFirstName} confirms they've received it, your order will progress automatically.`,
+                  [{ text: 'OK' }]
                 )
               }}
               activeOpacity={0.85}
@@ -455,6 +466,13 @@ export default function BuyerOrderDetail() {
                 Done — I've sent payment
               </Text>
             </TouchableOpacity>
+          )}
+          {order.status === 'pending_payment' && !!order.buyerPaymentClaimedAt && (
+            <View style={[s.actionBtn, s.claimedBanner, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[s.actionBtnText, { color: theme.textSecondary, fontFamily: 'Inter_500Medium' }]}>
+                Payment sent — waiting for {order.sellerFirstName} to confirm
+              </Text>
+            </View>
           )}
           {canConfirmDelivery && (
             <TouchableOpacity
@@ -565,6 +583,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     },
     actionBtn:     { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     concernBtn:    { backgroundColor: 'transparent', borderWidth: 1.5 },
+    claimedBanner: { borderWidth: 1 },
     actionBtnText: { fontSize: 15 },
   })
 }
