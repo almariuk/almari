@@ -74,13 +74,23 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
 
       {/* Content */}
       <View style={[s.content, { backgroundColor: theme.surfaceRaised }]}>
-        {/* Category */}
-        <Text
-          style={[s.subcategory, { color: theme.text, fontFamily: 'CormorantGaramond_700Bold' }]}
-          numberOfLines={1}
-        >
-          {data.subcategoryName}
-        </Text>
+        {/* Top row: category + colour · price */}
+        <View style={s.topRow}>
+          <Text
+            style={[s.subcategory, { color: theme.text, fontFamily: 'CormorantGaramond_700Bold' }]}
+            numberOfLines={1}
+          >
+            {data.subcategoryName}
+          </Text>
+          <View style={s.priceInline}>
+            {data.colourHex != null && (
+              <View style={[s.colourDot, { backgroundColor: data.colourHex, borderColor: theme.border }]} />
+            )}
+            <Text style={[s.price, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+              {price}
+            </Text>
+          </View>
+        </View>
 
         {/* Occasion */}
         {data.occasionDisplayName != null && (
@@ -138,18 +148,6 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           </Text>
         )}
 
-        {/* Price row: colour swatch · price */}
-        <View style={s.priceRow}>
-          {data.colourHex != null && (
-            <View
-              style={[s.colourDot, { backgroundColor: data.colourHex, borderColor: theme.border }]}
-            />
-          )}
-          <Text style={[s.price, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
-            {price}
-          </Text>
-        </View>
-
         {/* Fit badge — only when Fits Me toggle is active */}
         {data.fitLabel != null && (
           <FitBadge label={data.fitLabel} theme={theme} />
@@ -194,9 +192,22 @@ const s = StyleSheet.create({
     paddingBottom: 11,
     gap: 3,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  priceInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
   subcategory: {
     fontSize: 14,
     lineHeight: 18,
+    flex: 1,
   },
   occasion: {
     fontSize: 11,
@@ -223,12 +234,6 @@ const s = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginTop: 1,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 5,
   },
   colourDot: {
     width: 10,

@@ -236,6 +236,45 @@ export default function Profile() {
   const [addrPhone, setAddrPhone] = useState('');
   const [savingAddr, setSavingAddr] = useState(false);
 
+  // ── Edit address state ────────────────────────────────────────
+
+  const [editingAddrId, setEditingAddrId] = useState<string | null>(null);
+  const [editLine1, setEditLine1] = useState('');
+  const [editLine2, setEditLine2] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editPostcode, setEditPostcode] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEditAddr = (addr: UserAddressRow) => {
+    setEditingAddrId(addr.id);
+    setEditLine1(addr.address_line_1 ?? '');
+    setEditLine2(addr.address_line_2 ?? '');
+    setEditCity(addr.city ?? '');
+    setEditPostcode(addr.postcode ?? '');
+    setEditPhone(addr.contact_phone ?? '');
+  };
+
+  const cancelEditAddr = () => {
+    setEditingAddrId(null);
+  };
+
+  const saveEditAddress = async () => {
+    if (!editingAddrId || !editLine1.trim() || !editCity.trim() || !editPostcode.trim()) return;
+    setSavingEdit(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('user_addresses').update({
+      address_line_1: editLine1.trim(),
+      address_line_2: editLine2.trim() || null,
+      city: editCity.trim(),
+      postcode: editPostcode.trim().toUpperCase(),
+      contact_phone: editPhone.trim() || null,
+    }).eq('id', editingAddrId);
+    setSavingEdit(false);
+    setEditingAddrId(null);
+    qc.invalidateQueries({ queryKey: ['user_addresses', identityId] });
+  };
+
   const resetAddrForm = () => {
     setAddrLine1(''); setAddrLine2(''); setAddrCity(''); setAddrPostcode(''); setAddrPhone('');
     setAddingAddress(false);
@@ -504,6 +543,10 @@ export default function Profile() {
                   </TouchableOpacity>
                 )}
                 {!addr.is_default && <Text style={{ color: theme.border }}>·</Text>}
+                <TouchableOpacity onPress={() => startEditAddr(addr)}>
+                  <Text style={[s.addrAction, { color: theme.textSecondary }]}>Edit</Text>
+                </TouchableOpacity>
+                <Text style={{ color: theme.border }}>·</Text>
                 <TouchableOpacity onPress={() => {
                   Alert.alert('Remove address', 'Are you sure you want to remove this address?', [
                     { text: 'Cancel', style: 'cancel' },
@@ -513,6 +556,42 @@ export default function Profile() {
                   <Text style={[s.addrAction, { color: theme.error }]}>Remove</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Inline edit form */}
+              {editingAddrId === addr.id && (
+                <View style={[s.addrForm, { borderColor: theme.border, marginTop: 10 }]}>
+                  {[
+                    { placeholder: 'Address line 1', value: editLine1, set: setEditLine1, caps: 'words' as const },
+                    { placeholder: 'Address line 2 (optional)', value: editLine2, set: setEditLine2, caps: 'words' as const },
+                    { placeholder: 'City / Town', value: editCity, set: setEditCity, caps: 'words' as const },
+                    { placeholder: 'Postcode', value: editPostcode, set: setEditPostcode, caps: 'characters' as const },
+                    { placeholder: 'WhatsApp / phone (optional)', value: editPhone, set: setEditPhone, caps: 'none' as const },
+                  ].map(({ placeholder, value, set, caps }) => (
+                    <TextInput
+                      key={placeholder}
+                      style={[s.addrInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
+                      value={value}
+                      onChangeText={set}
+                      placeholder={placeholder}
+                      placeholderTextColor={theme.textDisabled}
+                      autoCapitalize={caps}
+                      keyboardType={placeholder.includes('WhatsApp') ? 'phone-pad' : 'default'}
+                    />
+                  ))}
+                  <View style={s.inlineButtons}>
+                    <TouchableOpacity
+                      style={[s.inlineSave, { backgroundColor: theme.accent, opacity: (!editLine1.trim() || !editCity.trim() || !editPostcode.trim()) ? 0.5 : 1 }]}
+                      onPress={saveEditAddress}
+                      disabled={savingEdit || !editLine1.trim() || !editCity.trim() || !editPostcode.trim()}
+                    >
+                      {savingEdit ? <ActivityIndicator size="small" color={theme.accentText} /> : <Text style={[s.inlineSaveText, { color: theme.accentText }]}>Save</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={cancelEditAddr} style={s.inlineCancel}>
+                      <IconX size={18} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           ))}
 

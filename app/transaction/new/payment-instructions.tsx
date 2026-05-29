@@ -160,7 +160,7 @@ export default function PaymentInstructions() {
             <Text style={[s.countdownText, { color: expired ? theme.error : theme.text, fontFamily: 'Inter_600SemiBold' }]}>
               {expired
                 ? 'Reservation expired — please contact the seller'
-                : `Held for you for ${formatCountdown(secondsLeft)}`
+                : `We have your item reserved — ${formatCountdown(secondsLeft)} remaining`
               }
             </Text>
           </View>
@@ -235,14 +235,11 @@ export default function PaymentInstructions() {
                 <Text style={[s.methodValue, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
                   {data.paypal}
                 </Text>
-                {/* F&F strong hint */}
+                {/* F&F hint */}
                 <View style={[s.ffWarning, { backgroundColor: theme.gold + '15', borderColor: theme.gold }]}>
                   <IconInfoCircle size={14} color={theme.gold} />
-                  <Text style={[s.ffText, { color: theme.text, fontFamily: 'Inter_400Regular' }]}>
-                    <Text style={{ fontFamily: 'Inter_600SemiBold' }}>Send as "Friends &amp; Family" — not "Goods &amp; Services".</Text>
-                    {' '}In PayPal, tap{' '}
-                    <Text style={{ fontFamily: 'Inter_600SemiBold' }}>"Send to a friend"</Text>
-                    {' '}when choosing payment type. Goods &amp; Services adds a fee for the seller and creates a separate PayPal dispute process that bypasses Almari's buyer protection.
+                  <Text style={[s.ffText, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+                    Send as Friends &amp; Family
                   </Text>
                 </View>
               </View>
