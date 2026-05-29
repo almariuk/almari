@@ -315,8 +315,27 @@ export default function ListPricing() {
                   maxLength={8}
                 />
               </View>
-              <Text style={s.priceInputHint}>Buyers pay this price. Postage is on top.</Text>
             </View>
+          </View>
+
+          {/* ── Postage hint ─────────────────────────────────────── */}
+          <View style={[s.postageHint, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[s.postageHintTitle, { color: theme.text }]}>Postage is your cost</Text>
+            <Text style={[s.postageHintBody, { color: theme.textSecondary }]}>
+              Factor it into your asking price. Royal Mail estimates:
+            </Text>
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Small (dupatta, kurta): £3.65–£4.65
+            </Text>
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Medium (saree, salwar set): £5.55–£8.55
+            </Text>
+            <Text style={[s.postageHintPrices, { color: theme.textSecondary }]}>
+              Large (lehenga, sherwani): £11.95–£16.15
+            </Text>
+            <Text style={[s.postageHintDisclaimer, { color: theme.textDisabled }]}>
+              Compensation is subject to Royal Mail's terms and conditions.
+            </Text>
           </View>
 
           <View style={{ height: 100 }} />
@@ -494,10 +513,33 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       lineHeight: 56,
       padding: 0,
     },
-    priceInputHint: {
-      fontFamily: 'Inter_400Regular',
+    postageHint: {
+      borderWidth: 1.5,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 28,
+      gap: 4,
+    },
+    postageHintTitle: {
+      fontFamily: 'Inter_500Medium',
       fontSize: 13,
-      color: theme.textSecondary,
+      marginBottom: 4,
+    },
+    postageHintBody: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      lineHeight: 17,
+      marginBottom: 4,
+    },
+    postageHintPrices: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      lineHeight: 19,
+    },
+    postageHintDisclaimer: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 11,
+      lineHeight: 16,
       marginTop: 8,
     },
 

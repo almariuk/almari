@@ -407,6 +407,79 @@ export default function Profile() {
     clear();
   };
 
+  // ── Delete account (GDPR right to erasure) ───────────────────
+
+  const handleDeleteAccount = async () => {
+    if (!identityId) return
+
+    // Check for active listings
+    const { count: listingCount } = await (supabase as any)
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('seller_id', identityId)
+      .eq('status', 'active')
+
+    if (listingCount && listingCount > 0) {
+      Alert.alert('Cannot delete account', 'You have active listings. Please remove them before deleting your account.')
+      return
+    }
+
+    // Check for open transactions
+    const { count: txCount } = await (supabase as any)
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .or(`seller_id.eq.${identityId},buyer_id.eq.${identityId}`)
+      .not('status', 'in', '("completed","refunded","cancelled")')
+
+    if (txCount && txCount > 0) {
+      Alert.alert('Cannot delete account', 'You have open orders. Please resolve them before deleting your account.')
+      return
+    }
+
+    Alert.alert(
+      'Delete your account?',
+      'Your personal data will be erased and you will be signed out immediately. Your listings and order history are kept for other buyers and sellers involved in those transactions.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you sure?',
+              'This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    // Anonymise personal data
+                    await (supabase as any)
+                      .from('user_identity')
+                      .update({ first_name: 'Deleted', last_name_initial: 'U' })
+                      .eq('id', identityId)
+                    await (supabase as any)
+                      .from('user_profile')
+                      .update({
+                        bust_cm: null, waist_cm: null, hips_cm: null,
+                        height_cm: null, uk_shoe_size: null,
+                        payment_instructions: null, profile_photo_url: null,
+                      })
+                      .eq('user_id', identityId)
+                    // Sign out — auth.users deletion handled manually by founder
+                    await supabase.auth.signOut()
+                    clear()
+                  },
+                },
+              ]
+            )
+          },
+        },
+      ]
+    )
+  };
+
   const { accentKey, setAccentKey } = useThemeStore();
 
   // ── Render ────────────────────────────────────────────────────
@@ -764,6 +837,11 @@ export default function Profile() {
           <Text style={[s.signOutText, { color: theme.error }]}>Sign out</Text>
         </TouchableOpacity>
 
+        {/* Delete account */}
+        <TouchableOpacity onPress={handleDeleteAccount} activeOpacity={0.7} style={s.deleteAccountBtn}>
+          <Text style={[s.deleteAccountText, { color: theme.textDisabled }]}>Delete account</Text>
+        </TouchableOpacity>
+
         {/* Legal footer */}
         <View style={s.legalFooter}>
           <Text style={[s.legalLink, { color: theme.textDisabled }]} onPress={() => Linking.openURL('https://almari.uk/terms')}>
@@ -853,6 +931,8 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
 
     signOutBtn:  { borderWidth: 1.5, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
     signOutText: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
+    deleteAccountBtn:  { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
+    deleteAccountText: { fontFamily: 'Inter_400Regular', fontSize: 13 },
 
     legalFooter: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 },
     legalLink:   { fontFamily: 'Inter_400Regular', fontSize: 12 },

@@ -677,7 +677,6 @@ export default function ListReview() {
           <Text style={s.priceCardValue}>
             {draft.askingPricePence !== null ? pence(draft.askingPricePence) : '—'}
           </Text>
-          <Text style={s.priceCardNote}>Postage is your cost — factor it into this price.</Text>
         </View>
 
         {/* Error */}
@@ -829,12 +828,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontSize: 48,
       color: theme.text,
       lineHeight: 56,
-    },
-    priceCardNote: {
-      fontFamily: 'Inter_400Regular',
-      fontSize: 12,
-      color: theme.textSecondary,
-      marginTop: 4,
     },
 
     bottomBar: {

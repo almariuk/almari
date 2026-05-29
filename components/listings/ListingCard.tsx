@@ -50,6 +50,7 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
 
   return (
     <Pressable
+      style={s.pressable}
       onPress={onPress}
       onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 400 }) }}
       onPressOut={() => { scale.value = withSpring(1.0, { damping: 20, stiffness: 400 }) }}
@@ -114,15 +115,12 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
             : ''}
         </Text>
 
-        {/* Condition */}
-        <Text
-          style={[s.condition, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}
-          numberOfLines={1}
-        >
-          {data.conditionDisplayText}
-        </Text>
+        {/* Fit badge — only when Fits Me toggle is active */}
+        {data.fitLabel != null && (
+          <FitBadge label={data.fitLabel} theme={theme} />
+        )}
 
-        {/* Seller row: diya · name · firework */}
+        {/* Seller row: diya · name · firework — always the bottom row */}
         <View style={s.sellerRow}>
           <IconCandleFilled size={13} color={diyaColour} />
           <Text
@@ -133,25 +131,6 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           </Text>
           <FireworkTrust score={data.listingTrustScore} maxScore={62} size={36} />
         </View>
-
-        {/* Why selling — the human touch */}
-        {data.whySellingText != null && (
-          <Text
-            style={[
-              s.whySelling,
-              { color: theme.textSecondary, fontFamily: 'CormorantGaramond_400Regular_Italic' },
-            ]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {`"${data.whySellingText}"`}
-          </Text>
-        )}
-
-        {/* Fit badge — only when Fits Me toggle is active */}
-        {data.fitLabel != null && (
-          <FitBadge label={data.fitLabel} theme={theme} />
-        )}
       </View>
       </Animated.View>
     </Pressable>
@@ -161,7 +140,11 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
 export default memo(ListingCard)
 
 const s = StyleSheet.create({
+  pressable: {
+    flex: 1,
+  },
   card: {
+    flex: 1,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -187,6 +170,7 @@ const s = StyleSheet.create({
     fontSize: 10,
   },
   content: {
+    flex: 1,
     paddingHorizontal: 10,
     paddingTop: 9,
     paddingBottom: 11,
@@ -217,23 +201,15 @@ const s = StyleSheet.create({
     fontSize: 13,
     lineHeight: 17,
   },
-  condition: {
-    fontSize: 10,
-    lineHeight: 14,
-  },
   sellerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
+    marginTop: 'auto',
+    paddingTop: 4,
   },
   sellerName: {
     fontSize: 11,
     flex: 1,
-  },
-  whySelling: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 1,
   },
   colourDot: {
     width: 10,

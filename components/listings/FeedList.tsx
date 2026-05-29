@@ -107,6 +107,7 @@ const s = StyleSheet.create({
   row: {
     gap: COL_GAP,
     marginBottom: COL_GAP,
+    alignItems: 'stretch',
   },
   emptyContainer: {
     paddingTop: 64,
