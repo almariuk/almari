@@ -8,6 +8,9 @@ export interface ListingCardMeasurements {
   hipsCm: number | null
   heightCm: number | null
   ukShoeSize: number | null
+  labelSize: string | null
+  ageFromYears: number | null
+  ageToYears: number | null
 }
 
 export interface ListingCardData {
@@ -53,4 +56,5 @@ export interface FeedFilters {
   maxPricePence?: number
   searchText?: string
   sortBy?: SortBy
+  labelSize?: string
 }

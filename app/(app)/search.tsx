@@ -144,6 +144,7 @@ export default function Search() {
   const [fabricTypeId,    setFabricTypeId]    = useState<number | null>(null)
   const [showMore,        setShowMore]        = useState(false)
   const [sortBy,          setSortBy]          = useState<SortBy>('newest')
+  const [labelSize,       setLabelSize]       = useState('')
 
   const resetAll = useCallback(() => {
     setTextQuery(''); setDebouncedText('')
@@ -156,6 +157,7 @@ export default function Search() {
     setWorkTypeId(null); setFabricTypeId(null)
     setShowMore(false)
     setSortBy('newest')
+    setLabelSize('')
   }, [])
 
   useFocusEffect(useCallback(() => {
@@ -166,7 +168,8 @@ export default function Search() {
     textQuery.length > 0 || categoryId !== null || subcategoryId !== null ||
     occasionId !== null || colourId !== null || fitsMeActive ||
     minPricePence !== undefined || maxPricePence !== undefined ||
-    conditionId !== null || patternId !== null || workTypeId !== null || fabricTypeId !== null
+    conditionId !== null || patternId !== null || workTypeId !== null || fabricTypeId !== null ||
+    labelSize.trim().length > 0
 
   // Debounce text
   useEffect(() => {
@@ -220,6 +223,7 @@ export default function Search() {
     minPricePence,
     maxPricePence,
     sortBy,
+    labelSize:       labelSize.trim() || undefined,
   }
 
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch, isFetching } = useFeedListings(filters)
@@ -425,6 +429,17 @@ export default function Search() {
               />
             ))}
           </ScrollView>
+
+          <FilterLabel text="Size" />
+          <TextInput
+            style={[s.sizeInput, { backgroundColor: theme.inputBackground, borderColor: labelSize.trim() ? theme.accent : theme.border, color: theme.text, fontFamily: 'Inter_400Regular' }]}
+            value={labelSize}
+            onChangeText={setLabelSize}
+            placeholder="e.g. S, M, 12, 14"
+            placeholderTextColor={theme.textDisabled}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </>
       )}
 
@@ -506,5 +521,6 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     sortBtnText: { fontSize: 13 },
 
     resultsDivider: { height: 12 },
+    sizeInput: { marginHorizontal: 14, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: 16 },
   })
 }

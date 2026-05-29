@@ -70,6 +70,7 @@ export default function ConfirmOrder() {
         status: 'pending_payment',
         payment_reference: ref,
         sale_price_pence: salePrice,
+        postage_price_pence: 0,
         total_paid_pence: salePrice,
         delivery_address: deliverySnapshot,
       })

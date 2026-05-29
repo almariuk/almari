@@ -217,6 +217,17 @@ export default function ListingDetail() {
             </Text>
           </View>
 
+          {/* Size / age — upfront */}
+          {listing.measurements && (listing.measurements.labelSize || listing.measurements.ageFromYears != null) && (
+            <Text style={[s.sizeUpfront, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>
+              {listing.categoryType === 'kids' && listing.measurements.ageFromYears != null
+                ? `${listing.measurements.ageFromYears}–${listing.measurements.ageToYears} years`
+                : listing.measurements.labelSize
+                  ? `Size ${listing.measurements.labelSize}`
+                  : null}
+            </Text>
+          )}
+
           <Divider />
 
           {/* Seller row */}
@@ -461,6 +472,7 @@ const s = StyleSheet.create({
   conditionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   colourDot: { width: 12, height: 12, borderRadius: 6, borderWidth: StyleSheet.hairlineWidth },
   condition: { fontSize: 13 },
+  sizeUpfront: { fontSize: 16, marginTop: 6 },
 
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
   sectionLabel: { fontSize: 10, letterSpacing: 1, marginBottom: 10 },

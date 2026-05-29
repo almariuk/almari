@@ -101,6 +101,9 @@ function useSellerProfileData(sellerId: string) {
                 hipsCm: mRow.hips_cm ?? null,
                 heightCm: mRow.height_cm ?? null,
                 ukShoeSize: mRow.uk_shoe_size ?? null,
+                labelSize: mRow.label_size ?? null,
+                ageFromYears: mRow.age_from_years ?? null,
+                ageToYears: mRow.age_to_years ?? null,
               }
             : null,
         }

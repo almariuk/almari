@@ -92,6 +92,18 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           </Text>
         )}
 
+        {/* Size / age — shown upfront */}
+        {(data.measurements?.labelSize || data.measurements?.ageFromYears != null) && (
+          <Text
+            style={[s.sizeLine, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}
+            numberOfLines={1}
+          >
+            {data.measurements?.ageFromYears != null
+              ? `${data.measurements.ageFromYears}–${data.measurements.ageToYears} yrs`
+              : `Size ${data.measurements?.labelSize}`}
+          </Text>
+        )}
+
         {/* Condition */}
         <Text
           style={[s.condition, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}
@@ -189,6 +201,10 @@ const s = StyleSheet.create({
   occasion: {
     fontSize: 11,
     lineHeight: 15,
+  },
+  sizeLine: {
+    fontSize: 13,
+    lineHeight: 17,
   },
   condition: {
     fontSize: 10,

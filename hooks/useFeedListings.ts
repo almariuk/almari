@@ -36,7 +36,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
             last_name_initial,
             user_profile ( trust_score_cached )
           ),
-          listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size ),
+          listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years ),
           listing_trust_scores ( total_score )
         `)
         .eq('status', 'active')
@@ -60,6 +60,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
       if (filters.fabricTypeId != null) query = query.eq('fabric_type_id', filters.fabricTypeId)
       if (filters.minPricePence != null) query = query.gte('asking_price_pence', filters.minPricePence)
       if (filters.maxPricePence != null) query = query.lte('asking_price_pence', filters.maxPricePence)
+      if (filters.labelSize) query = query.eq('listing_measurements.label_size', filters.labelSize)
 
       const { data, error } = await query
       if (error) throw error
@@ -105,6 +106,9 @@ export function useFeedListings(filters: FeedFilters = {}) {
                 hipsCm: mRow.hips_cm ?? null,
                 heightCm: mRow.height_cm ?? null,
                 ukShoeSize: mRow.uk_shoe_size ?? null,
+                labelSize: mRow.label_size ?? null,
+                ageFromYears: mRow.age_from_years ?? null,
+                ageToYears: mRow.age_to_years ?? null,
               }
             : null,
         }

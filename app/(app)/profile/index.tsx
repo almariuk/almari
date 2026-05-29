@@ -9,6 +9,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -496,17 +497,22 @@ export default function Profile() {
                   <Text style={[s.defaultBadge, { color: theme.accent }]}>Default</Text>
                 )}
               </View>
-              {!addr.is_default && (
-                <View style={s.addrActions}>
+              <View style={s.addrActions}>
+                {!addr.is_default && (
                   <TouchableOpacity onPress={() => setDefaultAddress(addr.id)}>
                     <Text style={[s.addrAction, { color: theme.accent }]}>Set as default</Text>
                   </TouchableOpacity>
-                  <Text style={{ color: theme.border }}>·</Text>
-                  <TouchableOpacity onPress={() => deleteAddress(addr.id)}>
-                    <Text style={[s.addrAction, { color: theme.error }]}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                )}
+                {!addr.is_default && <Text style={{ color: theme.border }}>·</Text>}
+                <TouchableOpacity onPress={() => {
+                  Alert.alert('Remove address', 'Are you sure you want to remove this address?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => deleteAddress(addr.id) },
+                  ])
+                }}>
+                  <Text style={[s.addrAction, { color: theme.error }]}>Remove</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
 
