@@ -122,6 +122,9 @@ GDPR right to erasure. User can delete their account from profile settings.
 
 ## Priority 1 — Add after first 50 users
 
+### Fast dispatch trust bonus
+Seller earns a trust point bonus when they mark an order dispatched quickly after payment is confirmed. Threshold and points TBD — suggested: dispatched within 48h of `paid_at` → +2 trust. Implemented as a DB trigger on `transactions` when `dispatched_at` is set: check `dispatched_at - paid_at < interval '48 hours'`, write a `fast_dispatch` trust event. Requires a new `fast_dispatch` row in `trust_event_types`.
+
 ### Draft listing persistence
 Persist draft to `listings` table with `status: 'draft'` from step 1. On app relaunch, detect existing draft and offer to resume. Replaces Zustand-only in-memory draft. Low priority — listing flow is mostly tap-to-select, losing a draft is a minor inconvenience.
 

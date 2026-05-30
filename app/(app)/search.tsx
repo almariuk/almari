@@ -424,6 +424,7 @@ export default function Search() {
             value={minPriceText}
             onChangeText={setMinPriceText}
             keyboardType="decimal-pad"
+            returnKeyType="done"
             placeholder="£ min"
             placeholderTextColor={theme.textDisabled}
           />
@@ -433,6 +434,7 @@ export default function Search() {
             value={maxPriceText}
             onChangeText={setMaxPriceText}
             keyboardType="decimal-pad"
+            returnKeyType="done"
             placeholder="£ max"
             placeholderTextColor={theme.textDisabled}
           />

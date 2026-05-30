@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -485,8 +487,9 @@ export default function Profile() {
   // ── Render ────────────────────────────────────────────────────
 
   return (
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <SafeAreaView style={s.root} edges={['top']}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* Header */}
         <View style={s.header}>
@@ -860,6 +863,7 @@ export default function Profile() {
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

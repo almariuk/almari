@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -274,7 +274,8 @@ export default function SellerOrderDetail() {
   }
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
+    <KeyboardAvoidingView style={[s.root, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <SafeAreaView style={s.root} edges={['top']} >
       {/* Nav */}
       <View style={[s.nav, { borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -286,7 +287,7 @@ export default function SellerOrderDetail() {
         <View style={s.navSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* Status timeline */}
         <StatusTimeline status={order.status} theme={theme} s={s} />
@@ -566,6 +567,7 @@ export default function SellerOrderDetail() {
 
       </ScrollView>
     </SafeAreaView>
+    </KeyboardAvoidingView>
   )
 }
 

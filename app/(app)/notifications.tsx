@@ -121,7 +121,10 @@ export default function Notifications() {
       .on(
         'postgres_changes' as any,
         { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
+          queryClient.invalidateQueries({ queryKey: ['notif_unread_count', userId] })
+        }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View, StyleSheet, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import {
@@ -8,39 +8,42 @@ import {
   IconBell,
   IconUser,
 } from '@tabler/icons-react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/store/auth';
 import { supabase } from '@/lib/supabase';
 
 function useUnreadCount(userId: string): number {
-  const [count, setCount] = useState(0);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!userId) return;
-
-    const fetch = async () => {
+  const { data = 0 } = useQuery({
+    queryKey: ['notif_unread_count', userId],
+    queryFn: async () => {
       const { count: n } = await (supabase as any)
         .from('notifications')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('is_read', false);
-      setCount(n ?? 0);
-    };
-    fetch();
+      return n ?? 0;
+    },
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
 
+  useEffect(() => {
+    if (!userId) return;
     const channel = supabase
       .channel(`notif_badge_${userId}_${Date.now()}`)
       .on(
         'postgres_changes' as any,
         { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => fetch()
+        () => queryClient.invalidateQueries({ queryKey: ['notif_unread_count', userId] })
       )
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
-  }, [userId]);
+  }, [userId, queryClient]);
 
-  return count;
+  return data;
 }
 
 function BellIcon({ color, size, badge }: { color: ColorValue; size: number; badge: number }) {

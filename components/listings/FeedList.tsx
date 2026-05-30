@@ -82,6 +82,8 @@ export function FeedList({
       onEndReachedThreshold={0.4}
       onRefresh={onRefresh}
       refreshing={isRefreshing}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       renderItem={({ item }) => (
         <ListingCard

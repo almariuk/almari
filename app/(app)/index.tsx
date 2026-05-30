@@ -3,7 +3,6 @@ import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import {
-  IconBell,
   IconRulerMeasure,
   IconSearch,
 } from '@tabler/icons-react-native'
@@ -100,12 +99,6 @@ export default function Home() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <AlmariIcon size={36} />
-        <TouchableOpacity
-          onPress={() => router.push('/(app)/notifications')}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <IconBell size={22} color={theme.text} />
-        </TouchableOpacity>
       </View>
 
       <TouchableOpacity
@@ -140,9 +133,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
