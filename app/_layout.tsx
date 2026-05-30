@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, AppState } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AlmariIcon from '@/components/brand/AlmariIcon';
@@ -145,10 +146,12 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="auto" />
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
