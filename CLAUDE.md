@@ -148,6 +148,7 @@ When a new feature or change is requested, reason about the full system impact f
 - Trust score shown as diya/firework visual only, never as a raw number to buyers/sellers
 - Merge all work to main at end of every session — never leave built code on a feature branch
 - At the start of every session read CLAUDE.md, ALMARI_PRD.md and ALMARI_BACKLOG.md before doing anything else
+- Never add check constraints for enum-like string columns — the app code is the only writer and constraints become landmines when new values are added. NOT NULL and foreign key constraints are fine.
 
 **Before every release (non-negotiable):**
 1. Run `npx tsc --noEmit` — must be clean
