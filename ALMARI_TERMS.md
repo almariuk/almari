@@ -149,6 +149,8 @@ Almari does not charge a transaction fee. We do not hold, process, or escrow fun
 
 **Sellers:** your payment details are stored in your Almari profile and shared only with buyers who have placed a confirmed order with you. See our Privacy Policy for full details.
 
+**Buyers:** when you place an order, your delivery address is shared with the seller solely for the purpose of dispatching your item.
+
 ---
 
 ## 12. Postage and dispatch
