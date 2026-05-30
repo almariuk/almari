@@ -50,6 +50,21 @@ export default function ConfirmOrder() {
     }
     setPlacing(true)
 
+    // Resume existing pending_payment transaction rather than creating a duplicate
+    const { data: existing } = await (supabase as any)
+      .from('transactions')
+      .select('id')
+      .eq('listing_id', listing.id)
+      .eq('buyer_id', identity.id)
+      .eq('status', 'pending_payment')
+      .maybeSingle()
+
+    if (existing) {
+      setPlacing(false)
+      router.replace(`/transaction/new/payment-instructions?id=${existing.id}` as any)
+      return
+    }
+
     const ref = 'ALM-' + Math.random().toString(36).substring(2, 7).toUpperCase()
     const salePrice = listing.askingPricePence ?? 0
 
@@ -70,7 +85,6 @@ export default function ConfirmOrder() {
         status: 'pending_payment',
         payment_reference: ref,
         sale_price_pence: salePrice,
-        postage_price_pence: 0,
         total_paid_pence: salePrice,
         delivery_address: deliverySnapshot,
       })

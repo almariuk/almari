@@ -29,7 +29,7 @@ focusManager.setEventListener(onFocus => {
   return () => sub.remove()
 })
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
 
 export default function RootLayout() {
   const [fontTimedOut, setFontTimedOut] = useState(false);
