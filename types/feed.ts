@@ -44,17 +44,15 @@ export type SortBy = 'newest' | 'price_asc' | 'price_desc'
 
 export interface FeedFilters {
   categoryId?: number
-  subcategoryId?: number
   subcategoryIds?: number[]
-  occasionBucketId?: number
-  colourId?: number
-  conditionId?: number
-  patternId?: number
-  workTypeId?: number
-  fabricTypeId?: number
+  occasionBucketIds?: number[]
+  colourIds?: number[]
+  conditionIds?: number[]
+  patternIds?: number[]
+  workTypeIds?: number[]
+  fabricTypeIds?: number[]
+  labelSizes?: string[]
   minPricePence?: number
   maxPricePence?: number
-  searchText?: string
   sortBy?: SortBy
-  labelSize?: string
 }

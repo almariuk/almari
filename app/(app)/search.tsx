@@ -11,29 +11,36 @@ import {
 import type { SortBy } from '@/types/feed'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
-import { useFocusEffect } from 'expo-router'
-import { IconSearch, IconX, IconChevronDown, IconChevronUp, IconRulerMeasure } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { useTheme } from '@/hooks/useTheme'
 import { useFeedListings } from '@/hooks/useFeedListings'
 import { getFitLabel, applyFitsMe } from '@/utils/fit'
 import { FeedList } from '@/components/listings/FeedList'
+import { IconSearch, IconX, IconChevronDown, IconChevronUp, IconRulerMeasure } from '@tabler/icons-react-native'
 import type { FeedItem, FeedFilters } from '@/types/feed'
 
-// ── Config ──────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────
 
-interface ConfigRow { id: number; name?: string; display_name?: string; display_text?: string; hex_code?: string; name_hindi?: string; category_id?: number }
+interface ConfigRow {
+  id: number
+  name?: string
+  display_name?: string
+  display_text?: string
+  hex_code?: string
+  name_hindi?: string
+  category_id?: number
+}
 
 interface SearchConfig {
-  categories:     ConfigRow[]
-  subcategories:  ConfigRow[]
-  occasionBuckets:ConfigRow[]
-  colours:        ConfigRow[]
-  conditionTiers: ConfigRow[]
-  patterns:       ConfigRow[]
-  workTypes:      ConfigRow[]
-  fabricTypes:    ConfigRow[]
+  categories:      ConfigRow[]
+  subcategories:   ConfigRow[]
+  occasionBuckets: ConfigRow[]
+  colours:         ConfigRow[]
+  conditionTiers:  ConfigRow[]
+  patterns:        ConfigRow[]
+  workTypes:       ConfigRow[]
+  fabricTypes:     ConfigRow[]
 }
 
 function useSearchConfig() {
@@ -51,21 +58,37 @@ function useSearchConfig() {
         supabase.from('fabric_types').select('id, display_name').eq('is_active', true).order('display_order'),
       ])
       return {
-        categories:      (cats.data ?? [])  as ConfigRow[],
-        subcategories:   (subs.data ?? [])  as ConfigRow[],
-        occasionBuckets: (occ.data  ?? [])  as ConfigRow[],
-        colours:         (cols.data  ?? [])  as ConfigRow[],
-        conditionTiers:  (conds.data ?? [])  as ConfigRow[],
-        patterns:        (pats.data  ?? [])  as ConfigRow[],
-        workTypes:       (works.data ?? [])  as ConfigRow[],
-        fabricTypes:     (fabs.data  ?? [])  as ConfigRow[],
+        categories:      (cats.data  ?? []) as ConfigRow[],
+        subcategories:   (subs.data  ?? []) as ConfigRow[],
+        occasionBuckets: (occ.data   ?? []) as ConfigRow[],
+        colours:         (cols.data  ?? []) as ConfigRow[],
+        conditionTiers:  (conds.data ?? []) as ConfigRow[],
+        patterns:        (pats.data  ?? []) as ConfigRow[],
+        workTypes:       (works.data ?? []) as ConfigRow[],
+        fabricTypes:     (fabs.data  ?? []) as ConfigRow[],
       }
     },
     staleTime: Infinity,
   })
 }
 
-// ── Local components ─────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
+
+function toggle(arr: number[], id: number): number[] {
+  return arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id]
+}
+
+function toggleStr(arr: string[], val: string): string[] {
+  return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
+}
+
+function merge(a: number[], b: number[]): number[] {
+  return [...new Set([...a, ...b])]
+}
+
+const SIZE_CHIPS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '38', '40', '42', '44', '46']
+
+// ── Local components ──────────────────────────────────────────
 
 function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const theme = useTheme()
@@ -78,13 +101,15 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[chip.text, { color: selected ? theme.accentText : theme.text, fontFamily: selected ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+      <Text style={[chip.text, {
+        color:      selected ? theme.accentText : theme.text,
+        fontFamily: selected ? 'Inter_600SemiBold' : 'Inter_400Regular',
+      }]}>
         {label}
       </Text>
     </TouchableOpacity>
   )
 }
-
 const chip = StyleSheet.create({
   wrap: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7 },
   text: { fontSize: 13 },
@@ -100,18 +125,14 @@ function ColourDot({ hex, selected, onPress }: { hex: string; selected: boolean;
     </TouchableOpacity>
   )
 }
-
 const dot = StyleSheet.create({
   circle: { width: 30, height: 30, borderRadius: 15 },
 })
 
 function FilterLabel({ text }: { text: string }) {
   const theme = useTheme()
-  return (
-    <Text style={[fl.text, { color: theme.textSecondary }]}>{text.toUpperCase()}</Text>
-  )
+  return <Text style={[fl.text, { color: theme.textSecondary }]}>{text.toUpperCase()}</Text>
 }
-
 const fl = StyleSheet.create({
   text: { fontFamily: 'Inter_500Medium', fontSize: 11, letterSpacing: 0.7, paddingHorizontal: 14, marginBottom: 8 },
 })
@@ -119,68 +140,76 @@ const fl = StyleSheet.create({
 // ── Screen ────────────────────────────────────────────────────
 
 export default function Search() {
-  const theme = useTheme()
+  const theme  = useTheme()
   const { identity, profile } = useAuthStore()
   const identityId = identity?.id ?? ''
   const s = makeStyles(theme)
 
   const { data: config } = useSearchConfig()
 
-  // Filter state
-  const [textQuery,       setTextQuery]       = useState('')
-  const [debouncedText,   setDebouncedText]   = useState('')
-  const [categoryId,      setCategoryId]      = useState<number | null>(null)
-  const [subcategoryId,   setSubcategoryId]   = useState<number | null>(null)
-  const [occasionId,      setOccasionId]      = useState<number | null>(null)
-  const [colourId,        setColourId]        = useState<number | null>(null)
-  const [fitsMeActive,    setFitsMeActive]    = useState(false)
-  const [minPriceText,    setMinPriceText]    = useState('')
-  const [maxPriceText,    setMaxPriceText]    = useState('')
-  const [minPricePence,   setMinPricePence]   = useState<number | undefined>(undefined)
-  const [maxPricePence,   setMaxPricePence]   = useState<number | undefined>(undefined)
-  const [conditionId,     setConditionId]     = useState<number | null>(null)
-  const [patternId,       setPatternId]       = useState<number | null>(null)
-  const [workTypeId,      setWorkTypeId]      = useState<number | null>(null)
-  const [fabricTypeId,    setFabricTypeId]    = useState<number | null>(null)
-  const [showMore,        setShowMore]        = useState(false)
-  const [sortBy,          setSortBy]          = useState<SortBy>('newest')
-  const [labelSize,       setLabelSize]       = useState('')
+  // ── Filter state ──────────────────────────────────────────
+  const [textQuery,      setTextQuery]      = useState('')
+  const [debouncedText,  setDebouncedText]  = useState('')
+  const [categoryId,     setCategoryId]     = useState<number | null>(null)
+  const [subcategoryIds, setSubcategoryIds] = useState<number[]>([])
+  const [occasionIds,    setOccasionIds]    = useState<number[]>([])
+  const [colourIds,      setColourIds]      = useState<number[]>([])
+  const [conditionIds,   setConditionIds]   = useState<number[]>([])
+  const [patternIds,     setPatternIds]     = useState<number[]>([])
+  const [workTypeIds,    setWorkTypeIds]    = useState<number[]>([])
+  const [fabricTypeIds,  setFabricTypeIds]  = useState<number[]>([])
+  const [labelSizes,     setLabelSizes]     = useState<string[]>([])
+  const [fitsMeActive,   setFitsMeActive]   = useState(false)
+  const [minPriceText,   setMinPriceText]   = useState('')
+  const [maxPriceText,   setMaxPriceText]   = useState('')
+  const [minPricePence,  setMinPricePence]  = useState<number | undefined>(undefined)
+  const [maxPricePence,  setMaxPricePence]  = useState<number | undefined>(undefined)
+  const [showMore,       setShowMore]       = useState(false)
+  const [sortBy,         setSortBy]         = useState<SortBy>('newest')
 
   const resetAll = useCallback(() => {
     setTextQuery(''); setDebouncedText('')
-    setCategoryId(null); setSubcategoryId(null)
-    setOccasionId(null); setColourId(null)
+    setCategoryId(null)
+    setSubcategoryIds([]); setOccasionIds([]); setColourIds([])
+    setConditionIds([]); setPatternIds([]); setWorkTypeIds([]); setFabricTypeIds([])
+    setLabelSizes([])
     setFitsMeActive(false)
     setMinPriceText(''); setMaxPriceText('')
     setMinPricePence(undefined); setMaxPricePence(undefined)
-    setConditionId(null); setPatternId(null)
-    setWorkTypeId(null); setFabricTypeId(null)
-    setShowMore(false)
-    setSortBy('newest')
-    setLabelSize('')
+    setShowMore(false); setSortBy('newest')
   }, [])
 
-  useFocusEffect(useCallback(() => {
-    resetAll()
-  }, [resetAll]))
-
   const hasActiveFilters =
-    textQuery.length > 0 || categoryId !== null || subcategoryId !== null ||
-    occasionId !== null || colourId !== null || fitsMeActive ||
-    minPricePence !== undefined || maxPricePence !== undefined ||
-    conditionId !== null || patternId !== null || workTypeId !== null || fabricTypeId !== null ||
-    labelSize.trim().length > 0
+    textQuery.length > 0 || categoryId !== null ||
+    subcategoryIds.length > 0 || occasionIds.length > 0 || colourIds.length > 0 ||
+    conditionIds.length > 0 || patternIds.length > 0 || workTypeIds.length > 0 ||
+    fabricTypeIds.length > 0 || labelSizes.length > 0 || fitsMeActive ||
+    minPricePence !== undefined || maxPricePence !== undefined
 
-  // Debounce text
+  // ── Debounce text ─────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => setDebouncedText(textQuery), 500)
     return () => clearTimeout(t)
   }, [textQuery])
 
-  // Log search events
+  // ── Debounce budget ───────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setMinPricePence(minPriceText ? Math.round(parseFloat(minPriceText) * 100) : undefined)
+    }, 500)
+    return () => clearTimeout(t)
+  }, [minPriceText])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setMaxPricePence(maxPriceText ? Math.round(parseFloat(maxPriceText) * 100) : undefined)
+    }, 500)
+    return () => clearTimeout(t)
+  }, [maxPriceText])
+
+  // ── Log search events ─────────────────────────────────────
   useEffect(() => {
     if (!debouncedText.trim()) return
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(supabase as any).from('search_events').insert({
       user_id: identityId || null,
       query: debouncedText,
@@ -189,45 +218,82 @@ export default function Search() {
     })
   }, [debouncedText, identityId])
 
-  // Derive subcategoryIds from text search
-  const textSubcategoryIds = useMemo(() => {
+  // ── Text search: resolve words across all dimensions ──────
+  // Each word is matched independently. Matches are merged per dimension.
+  // e.g. "silk saree" finds fabric "Silk" + subcategory "Saree"
+  const textResolved = useMemo(() => {
     const q = debouncedText.trim().toLowerCase()
-    if (!q || !config?.subcategories) return undefined
-    const matches = config.subcategories
-      .filter(s => s.name?.toLowerCase().includes(q))
-      .map(s => s.id)
-    return matches.length > 0 ? matches : [-1] // -1 = no match, returns nothing
-  }, [debouncedText, config?.subcategories])
+    if (!q || !config) return {}
 
-  // Subcategories for the selected category
-  const visibleSubcategories = useMemo(() => {
-    if (!categoryId || !config?.subcategories) return []
-    return config.subcategories.filter(s => s.category_id === categoryId)
-  }, [categoryId, config?.subcategories])
+    const words = q.split(/\s+/)
+    let subIds:   number[] = []
+    let colIds:   number[] = []
+    let fabIds:   number[] = []
+    let occIds:   number[] = []
+
+    for (const word of words) {
+      subIds = merge(subIds, config.subcategories.filter(x => x.name?.toLowerCase().includes(word)).map(x => x.id))
+      colIds = merge(colIds, config.colours.filter(x =>
+        x.name?.toLowerCase().includes(word) || x.name_hindi?.toLowerCase().includes(word)
+      ).map(x => x.id))
+      fabIds = merge(fabIds, config.fabricTypes.filter(x => x.display_name?.toLowerCase().includes(word)).map(x => x.id))
+      occIds = merge(occIds, config.occasionBuckets.filter(x => x.display_name?.toLowerCase().includes(word)).map(x => x.id))
+    }
+
+    return {
+      subcategoryIds:  subIds.length  > 0 ? subIds  : undefined,
+      colourIds:       colIds.length  > 0 ? colIds  : undefined,
+      fabricTypeIds:   fabIds.length  > 0 ? fabIds  : undefined,
+      occasionBucketIds: occIds.length > 0 ? occIds : undefined,
+    }
+  }, [debouncedText, config])
+
+  // ── Merge text-resolved + manual filters ─────────────────
+  const visibleSubcategories = useMemo(() =>
+    !categoryId || !config?.subcategories ? [] :
+    config.subcategories.filter(s => s.category_id === categoryId),
+  [categoryId, config])
+
+  const mergedSubcategoryIds = useMemo(() =>
+    merge(subcategoryIds, textResolved.subcategoryIds ?? []),
+  [subcategoryIds, textResolved.subcategoryIds])
+
+  const mergedColourIds = useMemo(() =>
+    merge(colourIds, textResolved.colourIds ?? []),
+  [colourIds, textResolved.colourIds])
+
+  const mergedFabricTypeIds = useMemo(() =>
+    merge(fabricTypeIds, textResolved.fabricTypeIds ?? []),
+  [fabricTypeIds, textResolved.fabricTypeIds])
+
+  const mergedOccasionIds = useMemo(() =>
+    merge(occasionIds, textResolved.occasionBucketIds ?? []),
+  [occasionIds, textResolved.occasionBucketIds])
+
+  // ── Build filters object ──────────────────────────────────
+  const filters: FeedFilters = {
+    categoryId:        categoryId ?? undefined,
+    subcategoryIds:    mergedSubcategoryIds.length > 0 ? mergedSubcategoryIds : undefined,
+    occasionBucketIds: mergedOccasionIds.length   > 0 ? mergedOccasionIds   : undefined,
+    colourIds:         mergedColourIds.length      > 0 ? mergedColourIds     : undefined,
+    conditionIds:      conditionIds.length         > 0 ? conditionIds        : undefined,
+    patternIds:        patternIds.length           > 0 ? patternIds          : undefined,
+    workTypeIds:       workTypeIds.length          > 0 ? workTypeIds         : undefined,
+    fabricTypeIds:     mergedFabricTypeIds.length  > 0 ? mergedFabricTypeIds : undefined,
+    labelSizes:        labelSizes.length           > 0 ? labelSizes          : undefined,
+    minPricePence,
+    maxPricePence,
+    sortBy,
+  }
+
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch, isFetching } = useFeedListings(filters)
+  const isRefreshing = isFetching && !isLoading && !isFetchingNextPage
+  const totalLoaded = data?.pages.flat().length ?? 0
 
   const hasMeasurements = !!(profile?.bust_cm || profile?.waist_cm || profile?.hips_cm)
   const userMeasurements = hasMeasurements
     ? { bustCm: profile?.bust_cm ?? null, waistCm: profile?.waist_cm ?? null, hipsCm: profile?.hips_cm ?? null }
     : null
-
-  const filters: FeedFilters = {
-    categoryId:      categoryId      ?? undefined,
-    subcategoryId:   subcategoryId   ?? undefined,
-    subcategoryIds:  textSubcategoryIds,
-    occasionBucketId:occasionId      ?? undefined,
-    colourId:        colourId        ?? undefined,
-    conditionId:     conditionId     ?? undefined,
-    patternId:       patternId       ?? undefined,
-    workTypeId:      workTypeId      ?? undefined,
-    fabricTypeId:    fabricTypeId    ?? undefined,
-    minPricePence,
-    maxPricePence,
-    sortBy,
-    labelSize:       labelSize.trim() || undefined,
-  }
-
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch, isFetching } = useFeedListings(filters)
-  const isRefreshing = isFetching && !isLoading && !isFetchingNextPage
 
   const items = useMemo((): FeedItem[] => {
     const all = data?.pages.flat() ?? []
@@ -240,16 +306,6 @@ export default function Search() {
 
   const clearText = useCallback(() => { setTextQuery(''); setDebouncedText('') }, [])
 
-
-  const handleCategoryPress = (id: number) => {
-    setCategoryId(prev => prev === id ? null : id)
-    setSubcategoryId(null)
-  }
-
-  const handleSubcategoryPress = (id: number) => {
-    setSubcategoryId(prev => prev === id ? null : id)
-  }
-
   const SORT_OPTIONS: { key: SortBy; label: string }[] = [
     { key: 'newest',    label: 'Newest' },
     { key: 'price_asc', label: 'Price ↑' },
@@ -259,20 +315,30 @@ export default function Search() {
   const filtersHeader = (
     <View style={s.filtersWrap}>
 
-      {/* Sort */}
-      <View style={s.sortRow}>
-        {SORT_OPTIONS.map(opt => (
-          <TouchableOpacity
-            key={opt.key}
-            onPress={() => setSortBy(opt.key)}
-            style={[s.sortBtn, sortBy === opt.key && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
-            activeOpacity={0.7}
-          >
-            <Text style={[s.sortBtnText, { color: sortBy === opt.key ? theme.accent : theme.textSecondary, fontFamily: sortBy === opt.key ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Sort + result count */}
+      <View style={s.sortCountRow}>
+        <View style={s.sortRow}>
+          {SORT_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => setSortBy(opt.key)}
+              style={[s.sortBtn, sortBy === opt.key && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.sortBtnText, {
+                color: sortBy === opt.key ? theme.accent : theme.textSecondary,
+                fontFamily: sortBy === opt.key ? 'Inter_600SemiBold' : 'Inter_400Regular',
+              }]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {(hasActiveFilters || debouncedText.length > 0) && !isLoading && (
+          <Text style={[s.resultCount, { color: theme.textSecondary }]}>
+            {hasNextPage ? `${totalLoaded}+` : `${totalLoaded}`} {totalLoaded === 1 ? 'result' : 'results'}
+          </Text>
+        )}
       </View>
 
       {/* Category */}
@@ -283,22 +349,25 @@ export default function Search() {
             key={c.id}
             label={c.name ?? ''}
             selected={categoryId === c.id}
-            onPress={() => handleCategoryPress(c.id)}
+            onPress={() => {
+              setCategoryId(prev => prev === c.id ? null : c.id)
+              setSubcategoryIds([])
+            }}
           />
         ))}
       </ScrollView>
 
-      {/* Subcategory (only when category selected) */}
+      {/* Subcategory */}
       {categoryId != null && visibleSubcategories.length > 0 && (
         <>
           <FilterLabel text="Type" />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
-            {visibleSubcategories.map(s => (
+            {visibleSubcategories.map(sc => (
               <Chip
-                key={s.id}
-                label={s.name ?? ''}
-                selected={subcategoryId === s.id}
-                onPress={() => handleSubcategoryPress(s.id)}
+                key={sc.id}
+                label={sc.name ?? ''}
+                selected={subcategoryIds.includes(sc.id)}
+                onPress={() => setSubcategoryIds(prev => toggle(prev, sc.id))}
               />
             ))}
           </ScrollView>
@@ -312,21 +381,21 @@ export default function Search() {
           <Chip
             key={o.id}
             label={o.display_name ?? ''}
-            selected={occasionId === o.id}
-            onPress={() => setOccasionId(prev => prev === o.id ? null : o.id)}
+            selected={occasionIds.includes(o.id)}
+            onPress={() => setOccasionIds(prev => toggle(prev, o.id))}
           />
         ))}
       </ScrollView>
 
-      {/* Colours */}
+      {/* Colour */}
       <FilterLabel text="Colour" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.dotRow}>
         {(config?.colours ?? []).map(c => (
           <ColourDot
             key={c.id}
             hex={c.hex_code ?? '#ccc'}
-            selected={colourId === c.id}
-            onPress={() => setColourId(prev => prev === c.id ? null : c.id)}
+            selected={colourIds.includes(c.id)}
+            onPress={() => setColourIds(prev => toggle(prev, c.id))}
           />
         ))}
       </ScrollView>
@@ -351,7 +420,6 @@ export default function Search() {
             style={[s.budgetInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
             value={minPriceText}
             onChangeText={setMinPriceText}
-            onBlur={() => setMinPricePence(minPriceText ? Math.round(parseFloat(minPriceText) * 100) : undefined)}
             keyboardType="decimal-pad"
             placeholder="£ min"
             placeholderTextColor={theme.textDisabled}
@@ -361,7 +429,6 @@ export default function Search() {
             style={[s.budgetInput, { borderColor: theme.border, backgroundColor: theme.inputBackground, color: theme.text }]}
             value={maxPriceText}
             onChangeText={setMaxPriceText}
-            onBlur={() => setMaxPricePence(maxPriceText ? Math.round(parseFloat(maxPriceText) * 100) : undefined)}
             keyboardType="decimal-pad"
             placeholder="£ max"
             placeholderTextColor={theme.textDisabled}
@@ -388,8 +455,8 @@ export default function Search() {
               <Chip
                 key={c.id}
                 label={c.display_text ?? ''}
-                selected={conditionId === c.id}
-                onPress={() => setConditionId(prev => prev === c.id ? null : c.id)}
+                selected={conditionIds.includes(c.id)}
+                onPress={() => setConditionIds(prev => toggle(prev, c.id))}
               />
             ))}
           </ScrollView>
@@ -400,8 +467,8 @@ export default function Search() {
               <Chip
                 key={p.id}
                 label={p.display_name ?? ''}
-                selected={patternId === p.id}
-                onPress={() => setPatternId(prev => prev === p.id ? null : p.id)}
+                selected={patternIds.includes(p.id)}
+                onPress={() => setPatternIds(prev => toggle(prev, p.id))}
               />
             ))}
           </ScrollView>
@@ -412,8 +479,8 @@ export default function Search() {
               <Chip
                 key={w.id}
                 label={w.display_name ?? ''}
-                selected={workTypeId === w.id}
-                onPress={() => setWorkTypeId(prev => prev === w.id ? null : w.id)}
+                selected={workTypeIds.includes(w.id)}
+                onPress={() => setWorkTypeIds(prev => toggle(prev, w.id))}
               />
             ))}
           </ScrollView>
@@ -424,22 +491,23 @@ export default function Search() {
               <Chip
                 key={f.id}
                 label={f.display_name ?? ''}
-                selected={fabricTypeId === f.id}
-                onPress={() => setFabricTypeId(prev => prev === f.id ? null : f.id)}
+                selected={fabricTypeIds.includes(f.id)}
+                onPress={() => setFabricTypeIds(prev => toggle(prev, f.id))}
               />
             ))}
           </ScrollView>
 
           <FilterLabel text="Size" />
-          <TextInput
-            style={[s.sizeInput, { backgroundColor: theme.inputBackground, borderColor: labelSize.trim() ? theme.accent : theme.border, color: theme.text, fontFamily: 'Inter_400Regular' }]}
-            value={labelSize}
-            onChangeText={setLabelSize}
-            placeholder="e.g. S, M, 12, 14"
-            placeholderTextColor={theme.textDisabled}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+            {SIZE_CHIPS.map(sz => (
+              <Chip
+                key={sz}
+                label={sz}
+                selected={labelSizes.includes(sz)}
+                onPress={() => setLabelSizes(prev => toggleStr(prev, sz))}
+              />
+            ))}
+          </ScrollView>
         </>
       )}
 
@@ -449,7 +517,6 @@ export default function Search() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      {/* Search bar — fixed above scroll */}
       <View style={[s.searchBarWrap, { borderBottomColor: theme.border }]}>
         <View style={s.searchBarRow}>
           <View style={[s.searchBar, { backgroundColor: theme.searchSurface, borderColor: theme.borderFocused }]}>
@@ -502,25 +569,26 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     searchInput:   { flex: 1, fontSize: 15 },
     clearBtn:      { fontSize: 14 },
 
-    filtersWrap: { paddingTop: 16 },
-    chipRow:     { paddingHorizontal: 14, gap: 8, paddingBottom: 16 },
-    dotRow:      { paddingHorizontal: 14, gap: 10, paddingBottom: 16 },
+    filtersWrap:   { paddingTop: 16 },
+    chipRow:       { paddingHorizontal: 14, gap: 8, paddingBottom: 16 },
+    dotRow:        { paddingHorizontal: 14, gap: 10, paddingBottom: 16 },
 
-    utilRow:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12, marginBottom: 16 },
-    fitsMeWrap:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    fitsMeLabel: { fontFamily: 'Inter_400Regular', fontSize: 13 },
-    budgetWrap:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-    budgetInput: { flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, fontSize: 14, fontFamily: 'Inter_400Regular' },
-    budgetDash:  { fontFamily: 'Inter_400Regular', fontSize: 14 },
+    sortCountRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 14, paddingBottom: 14, paddingTop: 4 },
+    sortRow:       { flexDirection: 'row', paddingHorizontal: 14, gap: 20 },
+    sortBtn:       { paddingBottom: 6 },
+    sortBtnText:   { fontSize: 13 },
+    resultCount:   { fontFamily: 'Inter_400Regular', fontSize: 12 },
+
+    utilRow:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 12, marginBottom: 16 },
+    fitsMeWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    fitsMeLabel:{ fontFamily: 'Inter_400Regular', fontSize: 13 },
+    budgetWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+    budgetInput:{ flex: 1, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, fontSize: 14, fontFamily: 'Inter_400Regular' },
+    budgetDash: { fontFamily: 'Inter_400Regular', fontSize: 14 },
 
     moreBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 4 },
     moreBtnText: { fontFamily: 'Inter_500Medium', fontSize: 13 },
 
-    sortRow:     { flexDirection: 'row', paddingHorizontal: 14, gap: 20, paddingBottom: 14, paddingTop: 4 },
-    sortBtn:     { paddingBottom: 6 },
-    sortBtnText: { fontSize: 13 },
-
     resultsDivider: { height: 12 },
-    sizeInput: { marginHorizontal: 14, borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: 16 },
   })
 }

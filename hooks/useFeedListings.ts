@@ -47,20 +47,16 @@ export function useFeedListings(filters: FeedFilters = {}) {
         .range(offset, offset + PAGE_SIZE - 1)
 
       if (filters.categoryId != null) query = query.eq('category_id', filters.categoryId)
-      if (filters.subcategoryIds != null && filters.subcategoryIds.length > 0) {
-        query = query.in('subcategory_id', filters.subcategoryIds)
-      } else if (filters.subcategoryId != null) {
-        query = query.eq('subcategory_id', filters.subcategoryId)
-      }
-      if (filters.occasionBucketId != null) query = query.eq('occasion_bucket_id', filters.occasionBucketId)
-      if (filters.colourId != null) query = query.eq('colour_id', filters.colourId)
-      if (filters.conditionId != null) query = query.eq('condition_id', filters.conditionId)
-      if (filters.patternId != null) query = query.eq('pattern_id', filters.patternId)
-      if (filters.workTypeId != null) query = query.eq('work_type_id', filters.workTypeId)
-      if (filters.fabricTypeId != null) query = query.eq('fabric_type_id', filters.fabricTypeId)
+      if (filters.subcategoryIds?.length) query = query.in('subcategory_id', filters.subcategoryIds)
+      if (filters.occasionBucketIds?.length) query = query.in('occasion_bucket_id', filters.occasionBucketIds)
+      if (filters.colourIds?.length) query = query.in('colour_id', filters.colourIds)
+      if (filters.conditionIds?.length) query = query.in('condition_id', filters.conditionIds)
+      if (filters.patternIds?.length) query = query.in('pattern_id', filters.patternIds)
+      if (filters.workTypeIds?.length) query = query.in('work_type_id', filters.workTypeIds)
+      if (filters.fabricTypeIds?.length) query = query.in('fabric_type_id', filters.fabricTypeIds)
       if (filters.minPricePence != null) query = query.gte('asking_price_pence', filters.minPricePence)
       if (filters.maxPricePence != null) query = query.lte('asking_price_pence', filters.maxPricePence)
-      if (filters.labelSize) query = query.eq('listing_measurements.label_size', filters.labelSize)
+      if (filters.labelSizes?.length) query = query.in('listing_measurements.label_size', filters.labelSizes)
 
       const { data, error } = await query
       if (error) throw error
