@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Clipboard } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Clipboard, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle, IconClock, IconChevronRight } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconCopy, IconCheck, IconInfoCircle, IconClock, IconChevronRight, IconExternalLink } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -440,7 +440,14 @@ export default function BuyerOrderDetail() {
             <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>TRACKING</Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Text style={[s.trackingLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Tracking number</Text>
-              <Text style={[s.trackingNumber, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>{order.trackingNumber}</Text>
+              <TouchableOpacity
+                style={s.trackingLink}
+                onPress={() => Linking.openURL(`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`)}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.trackingNumber, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>{order.trackingNumber}</Text>
+                <IconExternalLink size={14} color={theme.accent} />
+              </TouchableOpacity>
               {order.dispatchedAt && (
                 <Text style={[s.trackingDate, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
                   Dispatched {fmtDate(order.dispatchedAt)}
@@ -614,7 +621,8 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     orDivider:   { textAlign: 'center', fontSize: 12, marginVertical: 6 },
 
     trackingLabel:  { fontSize: 12, marginBottom: 4 },
-    trackingNumber: { fontSize: 16, marginBottom: 4 },
+    trackingLink:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+    trackingNumber: { fontSize: 16 },
     trackingDate:   { fontSize: 12 },
 
     windowBanner: { borderRadius: 10, borderWidth: 1, padding: 14, marginBottom: 16 },

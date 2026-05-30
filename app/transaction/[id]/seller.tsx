@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { IconArrowLeft, IconChevronRight } from '@tabler/icons-react-native'
+import { IconArrowLeft, IconChevronRight, IconExternalLink, IconPencil } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/auth'
@@ -172,6 +172,9 @@ export default function SellerOrderDetail() {
   const { data: order, isLoading, error } = useSaleDetail(id ?? '', identity?.id ?? '')
   const [saving, setSaving] = useState(false)
   const [trackingInput, setTrackingInput] = useState('')
+  const [editingTracking, setEditingTracking] = useState(false)
+  const [trackingEdit, setTrackingEdit] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   // Lazily close concern window when seller views this screen
   useEffect(() => {
@@ -428,8 +431,74 @@ export default function SellerOrderDetail() {
             <Text style={[s.sectionLabel, { color: theme.textDisabled, fontFamily: 'Inter_500Medium' }]}>DISPATCHED</Text>
             <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Text style={[s.trackingLabel, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>Tracking number</Text>
-              <Text style={[s.trackingNumber, { color: theme.text, fontFamily: 'Inter_600SemiBold' }]}>{order.trackingNumber}</Text>
-              {order.dispatchedAt && (
+
+              {editingTracking ? (
+                <>
+                  <TextInput
+                    style={[s.trackingInput, {
+                      backgroundColor: theme.inputBackground,
+                      borderColor: theme.borderFocused,
+                      color: theme.text,
+                      fontFamily: 'Inter_400Regular',
+                    }]}
+                    value={trackingEdit}
+                    onChangeText={setTrackingEdit}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    autoFocus
+                  />
+                  <View style={s.editActions}>
+                    <TouchableOpacity
+                      style={[s.editBtn, { backgroundColor: theme.accent }]}
+                      disabled={savingEdit || !trackingEdit.trim()}
+                      onPress={async () => {
+                        const val = trackingEdit.trim()
+                        if (!val) return
+                        setSavingEdit(true)
+                        await (supabase as any)
+                          .from('transactions')
+                          .update({ tracking_number: val })
+                          .eq('id', order.id)
+                        setSavingEdit(false)
+                        setEditingTracking(false)
+                        invalidate()
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      {savingEdit
+                        ? <ActivityIndicator size="small" color={theme.accentText} />
+                        : <Text style={[s.editBtnText, { color: theme.accentText, fontFamily: 'Inter_600SemiBold' }]}>Save</Text>
+                      }
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.editBtn, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}
+                      onPress={() => setEditingTracking(false)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[s.editBtnText, { color: theme.textSecondary, fontFamily: 'Inter_500Medium' }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <View style={s.trackingRow}>
+                  <TouchableOpacity
+                    style={s.trackingLink}
+                    onPress={() => Linking.openURL(`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.trackingNumber, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>{order.trackingNumber}</Text>
+                    <IconExternalLink size={14} color={theme.accent} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={() => { setTrackingEdit(order.trackingNumber ?? ''); setEditingTracking(true) }}
+                  >
+                    <IconPencil size={16} color={theme.textDisabled} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {!editingTracking && order.dispatchedAt && (
                 <Text style={[s.trackingDate, { color: theme.textDisabled, fontFamily: 'Inter_400Regular' }]}>
                   Posted {fmtDate(order.dispatchedAt)}
                 </Text>
@@ -550,8 +619,13 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       fontSize: 14, marginBottom: 12,
     },
     trackingLabel:  { fontSize: 12, marginBottom: 4 },
-    trackingNumber: { fontSize: 16, marginBottom: 4 },
-    trackingDate:   { fontSize: 12 },
+    trackingRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+    trackingLink:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    trackingNumber: { fontSize: 16 },
+    trackingDate:   { fontSize: 12, marginBottom: 4 },
+    editActions:    { flexDirection: 'row', gap: 10, marginTop: 8, marginBottom: 4 },
+    editBtn:        { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+    editBtnText:    { fontSize: 14 },
 
     actionBtn:     { borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     actionBtnText: { fontSize: 15 },
