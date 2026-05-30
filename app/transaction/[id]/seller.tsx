@@ -449,7 +449,7 @@ export default function SellerOrderDetail() {
                   />
                   <View style={s.editActions}>
                     <TouchableOpacity
-                      style={[s.editBtn, { backgroundColor: theme.accent }]}
+                      style={[s.editBtn, { backgroundColor: theme.accent, opacity: savingEdit || !trackingEdit.trim() ? 0.45 : 1 }]}
                       disabled={savingEdit || !trackingEdit.trim()}
                       onPress={async () => {
                         const val = trackingEdit.trim()
@@ -483,7 +483,7 @@ export default function SellerOrderDetail() {
                 <View style={s.trackingRow}>
                   <TouchableOpacity
                     style={s.trackingLink}
-                    onPress={() => Linking.openURL(`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`)}
+                    onPress={() => order.trackingNumber && Linking.openURL(`https://www.royalmail.com/track-your-item#/tracking-results/${order.trackingNumber}`)}
                     activeOpacity={0.7}
                   >
                     <Text style={[s.trackingNumber, { color: theme.accent, fontFamily: 'Inter_600SemiBold' }]}>{order.trackingNumber}</Text>
