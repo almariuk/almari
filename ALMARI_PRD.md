@@ -60,10 +60,16 @@ Warm. Cultural. Human. Never corporate. Never generic startup.
 ---
 
 ## Revenue Model
-- Postage margin only. Almari charges buyer slightly above Royal Mail cost. Difference is revenue.
-- Relisting fee after third relist — small charge (£1 suggested).
-- Promoted listings — seller pays to boost visibility. Post launch.
+
+### Phase 1 (live at launch)
 - Free to list. Free to buy. Free to sell.
+- No transaction fee. No postage margin. Attracts both sides of marketplace.
+- Introduce fees once liquidity is established.
+
+### Phase 2 (post-launch, when Sendcloud + Stripe are added)
+- Postage margin — Almari charges buyer slightly above Royal Mail cost via Sendcloud. Difference is Almari's revenue.
+- Relisting fee after third relist — small charge (£1 suggested), charged via Stripe.
+- Promoted listings — seller pays to boost visibility. Post launch.
 
 ---
 
@@ -71,6 +77,8 @@ Warm. Cultural. Human. Never corporate. Never generic startup.
 **Women:** Saree, Lehenga set, Salwar kameez set, Anarkali set, Kurta, Dupatta, Blouse, Co-ord set, Sharara set, Gharara set, Indo western gown, Dress material, Footwear
 **Men:** Sherwani set, Kurta pyjama set, Nehru jacket, Bandhgala suit, Jodhpuri suit, Indo western, Footwear
 **Kids:** Girls ethnic wear, Boys ethnic wear, Kids footwear
+
+Kids categories have `category_type = 'kids'` in DB. App branches on this field, never on name strings.
 
 ---
 
@@ -144,8 +152,10 @@ Bridal Red (Laal), Wine (Gehra Laal), Maroon, Burgundy, Coral (Moonga), Blush Pi
 
 ---
 
-## Private Seller Motivations (never shown publicly)
-Kids grew out of it | Moving house | Upgrading my wardrobe | It was a gift — never worn | Financial reasons | Emotional — ready to let go | Other
+## Private Seller Motivations
+**Removed from listing flow as of Phase 1.** Captured motivations were: Kids grew out of it | Moving house | Upgrading my wardrobe | It was a gift — never worn | Financial reasons | Emotional — ready to let go | Other.
+
+Data is still used in post-launch intelligent seller intervention (see backlog). `private_seller_motivation` table remains in DB for future use but is no longer written at listing creation.
 
 ---
 
@@ -170,16 +180,20 @@ Visual: A flat diya outline. Fills from base to flame with warm amber-to-gold as
 
 Mystery is intentional. Nobody knows how many tiers exist. Gold may never be announced.
 
-**Trust score events (configurable, not hardcoded):**
+**Trust score events (configured in DB, not hardcoded):**
 Verification: email +2, address +3, measurements +2, bank details +3, phone +3
-Activity: first listing +2, first purchase +2, sale completed +5, purchase completed +3, detailed listing +1, measurements on listing +1
+Activity: first listing +2, first purchase +2, sale completed +3, purchase completed +2, detailed listing +1, measurements on listing +1
 Activity (post-launch): waitlist converted +2 (requires negotiation engine)
 Behaviour: concern upheld −10, listing removed changed mind −2, listing removed sold elsewhere −5
+
+*Currently wired in app: `sale_completed` (+3) and `purchase_completed` (+2) on every `completed` transition via DB trigger. Other events are in `trust_score_events` table and `trust_event_types` — to be wired incrementally.*
 
 ### Listing Trust — The Firework
 Visual: A firework burst. Expands outward from centre as score increases. Low score = single spark. High score = full gold burst with silver outer sparks.
 
 Five states: Just listed (spark) → Starting → Building → Strong → Brilliant
+
+**Maximum listing trust score: 60.** Components and weights are DB-driven from `listing_trust_components` (see `utils/trust.ts`). Component breakdown is never shown to sellers — only the firework visual and total score.
 
 Components that feed listing trust score: photos count, measurements completeness, provenance detail, condition accuracy, care status, set completeness, why selling filled, additional notes.
 
@@ -187,11 +201,13 @@ Components that feed listing trust score: photos count, measurements completenes
 
 ## Pricing Intelligence
 
-### Price Context Panel (shown on every listing)
-- What the seller paid: original INR price + GBP equivalent at today's rate
+### Price Context Panel — Phase 2 (deferred, not built at launch)
+- What the seller paid: original price + currency + GBP equivalent at today's rate
 - Current replacement cost shipped from India: from benchmark_prices table + delivery + customs estimate
 - "Selling X% below replacement cost" — calculated automatically
 - What you'd pay elsewhere: UK vendor Leicester/Birmingham, UK vendor London, shipped from India, brand new in India
+
+The provenance form captures original price and currency (GBP/INR/USD etc.). Exchange rate data is in `daily_exchange_rates` table. Price context panel display is deferred to Phase 2.
 
 ### Benchmark Data Sources
 - Myntra — scraped monthly. Mid market India pricing.
@@ -207,23 +223,32 @@ Almari suggests an offer range based on category, subcategory, fabric, condition
 ---
 
 ## Listing Flow
+
+### Phase 1 (current — built)
 1. Photos (minimum 4) — guided prompts: full length, back, detail/embroidery, label
-2. Category and subcategory
+2. Category and subcategory (kids categories show age/height measurement fields)
 3. Style lens + work type + pattern + fabric
 4. Occasion bucket
 5. Colour swatch
 6. Condition tier
 7. Item care status
 8. Why selling phrase (tap to select)
-9. Private seller motivation (tap to select — never shown publicly)
-10. Provenance: city, area, seller type, year, original INR price. Heirloom toggle if unknown.
-11. Measurements: guided with body illustration
-12. Set contents: what's included, is set complete
-13. Package size and weight band
-14. Postage service: Royal Mail options with price and compensation level. Warning if item value exceeds compensation.
-15. Listing trust score shown + price suggestion unlocked if provenance complete
-16. Asking price set (pre-populated from suggestion)
-17. Review and confirm
+9. Provenance: city, area, seller type, year, original price + currency. Heirloom toggle if unknown.
+10. Measurements: guided with body illustration. Kids-aware: shows age range + height fields for kids categories.
+11. Set contents: what's included, is set complete
+12. **Postage hint (Phase 1):** Read-only box showing real Royal Mail prices. Seller factors postage into asking price. No service selection.
+    > "Postage is your cost — factor it into your asking price. Small parcel (dupatta, kurta): £3.65–£4.65 · Medium (saree, salwar set): £5.55–£8.55 · Large (lehenga, sherwani): £11.95–£16.15"
+13. Listing trust score shown + price suggestion unlocked if provenance complete
+14. Asking price set (pre-populated from suggestion)
+15. Review and confirm
+
+### Phase 2 additions (Sendcloud + Stripe)
+Steps 12 becomes a full postage selection:
+- Package size (Small/Medium/Large) and weight band picker
+- Royal Mail service cards with price and compensation level
+- Warning if item asking price exceeds service compensation level
+- Almari takes margin between buyer price and Royal Mail cost (never shown)
+- Sendcloud generates Royal Mail label on dispatch from seller screen
 
 ---
 
@@ -242,6 +267,8 @@ Listings sorted by fit match — not filtered, never hidden.
 2. Nearly there — within one size band above or below
 3. Different size — shown below, never hidden
 
+*Kids fit labels (Fits now / Nearly there / Different size) require family measurement profiles (K6) which are post-launch. Kids listings currently show age/height range on listing detail.*
+
 **Footwear — exact match only:**
 Matched on `uk_shoe_size`. Exact match = Fits. Everything else shown below unlabelled.
 
@@ -257,12 +284,23 @@ When offer is active on a listing:
 ---
 
 ## Postage Rules
+
+### Phase 1 (current)
+- Seller arranges their own Royal Mail postage.
+- No Evri, no DPD, no other carriers.
+- Seller enters tracking number on dispatch.
+- Buyer sees tracking number as a tappable Royal Mail link.
+- Seller can edit tracking number inline if entered incorrectly (available while status = dispatched).
+- Postage prices shown as a static hint in listing flow — updated annually from royalmail.com.
+
+### Phase 2 (Sendcloud integration)
 - Royal Mail only. No Evri, no DPD, no other carriers.
 - Seller selects package size (Small/Medium/Large) and weight (Light/Medium/Heavy)
 - Almari shows Royal Mail service options with price and compensation level
 - Warning shown if item asking price exceeds service compensation level
 - Almari takes margin between what buyer pays and what Royal Mail charges
 - Margin never shown to buyer or seller
+- Sendcloud generates label on dispatch
 
 ---
 
@@ -273,9 +311,9 @@ When offer is active on a listing:
 |---|---|
 | `draft` | Created but not submitted. Persisted to DB from step 1. |
 | `active` | Live and available to buy. |
-| `reserved` | Buy Now tapped — locked for 10 minutes while payment processes. Prevents race condition. |
+| `reserved` | Buy Now tapped — locked for **20 minutes** while buyer arranges payment. Prevents race condition. |
 | `sold` | Payment confirmed. |
-| `removed` | Seller removed it. Reason captured via S18. |
+| `removed` | Seller removed it. Reason captured via S18 (post-launch). |
 | `removed_by_admin` | Almari removed it. |
 | `suspended` | Under review. Hidden from search. |
 
@@ -288,7 +326,7 @@ When offer is active on a listing:
 | `delivered` | Buyer confirmed receipt. 48h concern window opens. |
 | `concern_open` | Buyer raised concern within 48h window. |
 | `concern_resolved` | Concern upheld or dismissed by Almari. |
-| `completed` | 48h window closed with no concern, or concern dismissed. Payout due. |
+| `completed` | 48h window closed with no concern, or concern dismissed. |
 | `refunded` | Concern upheld or lost in post confirmed by both parties. Manual Almari refund. |
 | `cancelled` | Cancelled before dispatch (e.g. seller unable to fulfil). |
 
@@ -297,23 +335,65 @@ Listings do not expire. A piece of Indian ethnic wear may take months to find it
 
 ---
 
-## Delivery Flow (offline payment model at launch)
-Buy Now tapped → transaction created (`pending_payment`), payment reference `ALM-XXXXX` issued, listing status `reserved` (DB trigger) → buyer transfers funds offline (PayPal/Revolut/bank transfer) using reference → seller confirms payment received → `paid` → seller posts item, enters tracking number → `dispatched` → buyer confirms receipt → `delivered`, 48h concern window opens → no concern → `completed`, Almari manually settles payout → seller receives funds.
+## Delivery Flow
 
-If no concern raised within 48h window → `completed`. Almari pays seller within 48h.
+### Phase 1 — Offline payment model (current)
+Buy Now tapped → transaction created (`pending_payment`), payment reference `ALM-XXXXX` issued, listing status `reserved` for 20 minutes (DB trigger) → buyer transfers funds offline (PayPal/Revolut) using reference → buyer taps "Done — I've sent payment" → seller confirms payment received → `paid` → seller posts item via Royal Mail, enters tracking number → `dispatched` → buyer confirms receipt → `delivered`, 48h concern window opens → no concern → `completed`, Almari manually settles with seller.
 
-If tracking not updated 5 days after dispatch → nudge both parties.
-No response after nudge → buyer can open a lost in post case.
-Lost in post case → both parties confirm in-app → transaction status `refunded`, Almari manually refunds buyer.
+Buy Now is blocked if seller has not set up payment details (PayPal or Revolut).
 
-**Post-launch (Phase 3):** Stripe replaces offline transfer. Sendcloud generates Royal Mail labels. Escrow automates payout. Flow is identical — only the payment step changes.
+Delivery address captured at checkout, snapshotted to transaction. Shown to seller in dispatch instructions.
+
+In-app notification + email sent to relevant party at each status transition.
+
+If no concern raised within 48h window → `completed`.
+
+If tracking not updated 5 days after dispatch → nudge both parties. No response after nudge → buyer can open a lost in post case. Lost in post case → both parties confirm in-app → transaction status `refunded`, Almari manually refunds buyer.
+
+### Phase 2 — Stripe escrow (post-launch)
+Stripe replaces offline transfer. Sendcloud generates Royal Mail labels. Escrow automates payout. Flow is identical — only the payment and label steps change.
+
+---
+
+## Notifications (S17)
+
+### In-app notifications (Phase 1 — built)
+- Chronological list, unread blue dot per row
+- Tap → marks read, navigates to buyer or seller order detail (role auto-detected from transaction)
+- Mark all read — header button
+- Swipe to delete — per-row dismiss
+- Empty state: "You're all caught up"
+- Unread badge on Alerts tab icon — real-time via Supabase subscription
+- Channel: `in_app`
+
+**Five DB triggers (write to `notifications` table):**
+| Event | Recipient | Type |
+|---|---|---|
+| Buyer taps "Done — I've sent payment" | Seller | `payment_sent` |
+| Seller confirms payment received | Buyer | `payment_confirmed` |
+| Seller marks dispatched | Buyer | `dispatched` |
+| Buyer confirms received | Seller | `delivered` |
+| Concern raised | Seller | `concern_raised` |
+
+### Transactional emails (Phase 1 — built)
+Same events as above (except concern raised), sent via Resend using `pg_net` DB triggers. Recipient email looked up from `auth.users`. Always sent — not affected by marketing email toggle.
+
+| Event | Recipient | Subject |
+|---|---|---|
+| Buyer marks payment sent | Seller | "Payment is on its way — [item]" |
+| Seller confirms payment | Buyer | "Your order is confirmed — [item]" |
+| Seller marks dispatched | Buyer | "Your [item] is on its way" |
+| Buyer confirms received | Seller | "Order complete — [item]" |
+
+### Push notifications — Phase 2 (post-TestFlight)
+Expo Push Notifications infrastructure. Full trigger list in backlog.
 
 ---
 
 ## Concerns (not returns)
 Buyers can raise a concern within 48 hours of delivery. Three reasons only:
 1. Item condition significantly worse than described
-2. Set was incomplete — parts missing not declared  
+2. Set was incomplete — parts missing not declared
 3. Suspected vendor listing
 
 Concern affects seller trust score if upheld. Three concerns in 90 days → trust meter hit + manual review.
@@ -335,55 +415,73 @@ Score 9: free listing privilege suspended for 3 months. Seller can still list �
 Score resets to 0 after 3 months.
 Removal score visible to seller only in their profile.
 
+**S18 Removal reason screen** — deferred post-launch. Currently no in-app flow for capturing removal reason. Listings are removed from My Listings without a reason screen. Build before first 50 users.
+
 ---
 
 ## Screens
-S1 — Splash
-S2 — Register (email verification inline)
-S3 — Welcome + measurements
-S4 — Home feed
-S5 — Search and filters
-S6 — Listing detail (photos, story, price context, Buy Now button — offer slider added post-launch with negotiation engine)
-S7 — Listing creation pt 1 (photos, category, style, colour, condition, occasion, why selling)
-S8 — Listing creation pt 2 (provenance, measurements, postage)
-S9 — Pricing (trust score, price suggestion, asking price)
-S10 — Review and confirm
-S11 — Offer status (all negotiation states — post-launch when negotiation engine added)
-S12 — Payment (checkout, Stripe)
-S16 — Profile (history, certificates, badges, payouts, bank details)
-S17 — Notifications
-S18 — Removal reason (changed mind / sold elsewhere / mistake / damaged — feeds removal score)
-S19 — Bank details entry
-S20 — My listings (active, sold, removed)
-S21 — Measurements (accessible anytime from profile)
-S22 — My Purchases (buyer's purchase list — active / completed)
-S23 — Order detail, buyer view (status timeline, tracking, confirm receipt, raise concern button)
-S24 — Order detail, seller view (dispatch instructions, confirm posted, tracking entry, payout status)
-S25 — Raise a concern (3 reasons, 48h window with countdown)
-S26 — Lost in post case (both parties confirm in-app, Almari initiates refund)
-S27 — Seller public profile (diya tier, member since, completed sales count, active listings — read only, no contact)
+
+### Built (Phase 1)
+| Screen | File | Status |
+|---|---|---|
+| S1 — Get Started / Splash | `app/(auth)/welcome.tsx` | Done |
+| S2/S3 — Register + OTP inline | `app/(auth)/register.tsx` | Done |
+| S3 — Welcome / Onboarding (name, measurements) | `app/(auth)/welcome.tsx` | Done |
+| S4 — Home feed (search bar, listing cards, seasonal banner) | `app/(app)/index.tsx` | Done |
+| S5 — Search (text + multi-select filters: category, subcategory, occasion, colour, condition, pattern, work, fabric, budget, size/age) | `app/(app)/search.tsx` | Done |
+| S6 — Listing detail (photos, story, Buy Now, 20-min reservation countdown, seller row → S27) | `app/listing/[id].tsx` | Done |
+| S7–S10 — Listing creation (4 steps) | `app/list/step-1,2,pricing,review.tsx` | Done |
+| Edit listing | `app/list/edit/[id].tsx` | Done |
+| S11 — Profile (KPI row, diya, tier, payment details, addresses, My Listings, orders, settings, delete account) | `app/(app)/profile/index.tsx` | Done |
+| S17 — Notifications (real-time list, badge, mark all read, swipe delete) | `app/(app)/notifications.tsx` | Done |
+| S19 — Payment details (PayPal + Revolut — offline model) | `app/(app)/profile/bank-details.tsx` | Done |
+| S20 — My Listings (active / sold / removed tabs) | `app/(app)/profile/my-listings.tsx` | Done |
+| S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done (family profiles post-launch) |
+| S22 — My Purchases | `app/(app)/profile/purchases.tsx` | Done |
+| S22 — My Sales | `app/(app)/profile/sales.tsx` | Done |
+| S23 — Order detail, buyer (timeline, payment, tracking link, confirm received, raise concern) | `app/transaction/[id]/buyer.tsx` | Done |
+| S24 — Order detail, seller (confirm payment, dispatch + tracking entry, tracking link + inline edit) | `app/transaction/[id]/seller.tsx` | Done |
+| S25 — Raise a concern (3 reasons, confirm step) | `app/transaction/[id]/concern.tsx` | Done |
+| S26 — Lost in post (both-party confirm) | `app/transaction/[id]/lost-in-post.tsx` | Done |
+| S27 — Seller public profile (diya, member since, sales count, listings grid) | `app/profile/[id].tsx` | Done |
+| Buy Now confirm + payment instructions | `app/transaction/new/confirm.tsx`, `payment-instructions.tsx` | Done |
+| GDPR — Delete account | `app/(app)/profile/index.tsx` | Done |
+
+### Deferred — Phase 2 / Post-launch
+| Screen | Notes |
+|---|---|
+| S12 — Payment (Stripe checkout) | Phase 2 — replaces offline PayPal/Revolut |
+| S11 — Offer status / negotiation states | Post-launch — requires negotiation engine |
+| S18 — Removal reason | Post-launch — before first 50 users |
+| S21 — Family measurement profiles (K6) | Post-launch — kids fit label infrastructure |
 
 ---
 
 ## Filters and Sort
 
-**Sort options:** Newest first (default), Price low → high, Price high → low, Best fit (Fits Me score)
+### Sort options
+Newest first (default), Price low → high, Price high → low
 
-**Popular filters (shown immediately):** Category, subcategory, occasion bucket, colour swatches, fits me sort toggle, budget slider
-**Special filters (under more filters):** Condition, pattern, work type, fabric
+*Best fit / Fits Me sort — post-launch, requires family measurement profiles (K6)*
+
+### Filters (built in S5 search)
+Category, subcategory, occasion bucket, colour swatches, condition, pattern, work type, fabric, budget (min/max), size (women's UK sizes), age range (kids)
 
 ---
 
 ## Tech Stack
-- React Native via Expo (iOS + Android)
-- Supabase (Postgres + Auth + Storage + Edge Functions)
-- Stripe (payments + Connect for seller payouts)
-- Sendcloud (Royal Mail label generation)
-- Resend (transactional email)
-- Expo Push Notifications
-- exchangerate-api.com (free daily GBP/INR rate)
+- React Native / Expo SDK 56 (iOS + Android)
+- Supabase (Postgres + Auth + PostgREST + Storage + Realtime)
+- React Query v5 (`useQuery`, `useInfiniteQuery`)
+- Zustand (auth + listing draft state)
+- expo-image (photo display)
+- react-native-svg + react-native-reanimated v4 (animations)
+- @tabler/icons-react-native v3.44.0
+- Resend (transactional email, via pg_net DB triggers)
+- EAS (cloud builds, TestFlight)
 - GitHub (code repository)
-- Expo Application Services (cloud builds, TestFlight)
+- **Phase 2:** Stripe (payments + Connect for seller payouts), Sendcloud (Royal Mail label generation), exchangerate-api.com (daily GBP/INR rate)
+- **Post-launch:** Expo Push Notifications
 
 ---
 
@@ -412,7 +510,8 @@ Every screen with a list must have a designed empty state — never a blank scre
 |---|---|
 | S4 Home feed (no listings yet) | "Be one of the first. The cupboards are opening." + Sell button |
 | S4 Home feed (no fit matches) | "Add your measurements to find pieces that fit." + link to S21 |
-| S5 Search (no results) | "Nothing yet. But it might arrive tomorrow." + Save search (post-launch) |
+| S5 Search (no results) | "Nothing yet. But it might arrive tomorrow." |
+| S17 Notifications (none) | "You're all caught up" + bell icon |
 | S20 My Listings — active | "Your first listing is waiting to be written." + List button |
 | S20 My Listings — sold | "Your first sale is coming." |
 | S20 My Listings — removed | Blank — no copy needed |
@@ -426,18 +525,25 @@ All sales are final. Almari is a peer to peer platform between private individua
 
 Misrepresentation concern window: 48 hours after delivery. Three specific reasons only.
 
-Lost in post: Almari facilitates resolution. Both parties agree. Seller claims Royal Mail. Almari refunds buyer from escrow.
+Lost in post: Almari facilitates resolution. Both parties agree. Seller claims Royal Mail. Almari refunds buyer manually at launch (escrow automates this in Phase 2).
 
 Almari's liability limited to transaction value.
 
 UK governing law.
 
-Full T&Cs drafted — see separate legal document.
+Full T&Cs live at almari.uk/terms. Privacy Policy at almari.uk/privacy. Both written for offline model. Solicitor review when first revenue arrives.
+
+ICO registration required when processing personal data commercially. Revisit when fees introduced.
 
 ---
 
-## Launch Scope (MVP)
-IN: All categories, UK wide, detailed listing only, full listing trust score, price context panel, buy now only, provenance data capture, fits me sort, Royal Mail via Sendcloud, Stripe escrow, manual payouts, seller trust score (diya), removal score tracking (S18), concerns (S25), order tracking (S22–S26), all config driven.
+## Launch Scope (Phase 1 — current)
 
-OUT (post-launch): Make an offer + negotiation engine, waitlist, private pricing tiers, pricing intelligence algorithm, badges and gamification, promoted listings, quick list, automated payouts, automated payout batch, lost in post case management UI (manual process at launch), seasonal notification automation, provenance certificate PDF, social content generator, search trends engine, push notification triggers (manual Supabase comms at launch), biometric login.
+### IN (built and live)
+All categories, UK wide, detailed listing only, full listing trust score (max 60), buy now only, provenance data capture (including original price currency), kids measurement fields (age/height), postage hint (static Royal Mail prices), offline payment (PayPal/Revolut), payment reference `ALM-XXXXX`, 20-minute reservation lock, in-app notifications (real-time), transactional emails (Resend), order tracking with Royal Mail link + inline edit, seller trust score (diya), seller public profile, all 5 order statuses wired, concerns (S25), lost in post (S26), GDPR delete account, edit listing, delivery address at checkout, Buy Now guard (requires seller payment details).
 
+### OUT Phase 2 (Stripe + Sendcloud — drop-in replacements, DB schema unchanged)
+Full postage selection in listing flow, Sendcloud Royal Mail label generation, Stripe escrow, automated payouts, price context panel (exchange rate + benchmark pricing), relisting fee.
+
+### OUT post-launch (backlog — see ALMARI_BACKLOG.md)
+Make an offer + negotiation engine, waitlist, private pricing tiers, S18 removal reason screen, family measurement profiles (K6) + full kids fit labels, Fits Me sort, price drop alerts, saved searches, badges, gamification, promoted listings, quick list, biometric login, social sign-in (Apple/Google), social content generator, provenance certificate PDF, draft listing persistence, push notifications, seasonal notification automation, search trends engine, Almari Stores tiers.
