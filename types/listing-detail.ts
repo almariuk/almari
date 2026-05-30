@@ -21,6 +21,7 @@ export interface ListingDetailProvenance {
   sellerTypeName: string | null
   purchaseYear: number | null
   originalPriceInr: number | null
+  originalPriceCurrency: 'INR' | 'GBP'
   isApproximate: boolean
   isHeirloom: boolean
   heirloomStory: string | null

@@ -33,7 +33,7 @@ export function useListingDetail(id: string) {
           listing_measurements ( bust_cm, chest_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
           listing_trust_scores ( total_score ),
           provenance (
-            purchase_year, original_price_inr, original_price_approximate,
+            purchase_year, original_price_inr, original_price_currency, original_price_approximate,
             is_heirloom, heirloom_story,
             provenance_cities ( name, country ),
             provenance_areas ( name ),
@@ -114,6 +114,7 @@ export function useListingDetail(id: string) {
               sellerTypeName: pRow.seller_types?.name ?? null,
               purchaseYear: pRow.purchase_year ?? null,
               originalPriceInr: pRow.original_price_inr ?? null,
+              originalPriceCurrency: (pRow.original_price_currency ?? 'INR') as 'INR' | 'GBP',
               isApproximate: pRow.original_price_approximate ?? false,
               isHeirloom: pRow.is_heirloom ?? false,
               heirloomStory: pRow.heirloom_story ?? null,

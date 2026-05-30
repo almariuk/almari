@@ -66,7 +66,7 @@ async function fetchListingForEdit(listingId: string): Promise<ListingDraftData>
       set_contents, set_complete, additional_notes, asking_price_pence,
       listing_photos ( url, display_order ),
       provenance ( city_id, area_id, seller_type_id, purchase_year,
-                   original_price_inr, original_price_approximate, is_heirloom, heirloom_story ),
+                   original_price_inr, original_price_currency, original_price_approximate, is_heirloom, heirloom_story ),
       listing_measurements ( bust_cm, waist_cm, hips_cm, chest_cm, height_cm,
                               uk_shoe_size, label_size, age_from_years, age_to_years,
                               height_from_cm, height_to_cm )
@@ -104,7 +104,7 @@ async function fetchListingForEdit(listingId: string): Promise<ListingDraftData>
     sellerTypeId: prov?.seller_type_id ?? null,
     purchaseYear: prov?.purchase_year != null ? String(prov.purchase_year) : '',
     originalPriceInr: prov?.original_price_inr != null ? String(prov.original_price_inr) : '',
-    originalPriceCurrency: 'INR',
+    originalPriceCurrency: (prov?.original_price_currency ?? 'INR') as 'INR' | 'GBP',
     originalPriceApproximate: prov?.original_price_approximate ?? false,
     listingBustCm: str(meas?.bust_cm),
     listingWaistCm: str(meas?.waist_cm),
