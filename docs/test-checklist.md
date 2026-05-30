@@ -43,13 +43,22 @@ Ask Claude to run the DB checks (`scripts/pre-release-checks.sql`) at the same t
 
 ## 4. Buy Now flow (requires two accounts — buyer and seller)
 
+Run this end-to-end every session. This is the highest-risk area — most bugs surface here.
+
+- [ ] As seller: ensure payment details (PayPal or Revolut) are set in Profile → Payment details.
 - [ ] As buyer: tap Buy Now on an active listing. Confirm screen shows correct price.
-- [ ] Tap Place Order. Payment instructions screen appears with PayPal/Revolut details and 20-min countdown.
-- [ ] Tap "Done — I've sent payment". Button disappears, shows waiting state.
-- [ ] As seller: My Sales shows the order as New. Tap it. Tap Confirm payment received.
-- [ ] Seller: enter a tracking number. Tap Mark as dispatched.
-- [ ] As buyer: order shows Dispatched with tracking number.
-- [ ] Buyer: tap Confirm received. Confirmation alert appears. Confirm.
+- [ ] Tap Place Order. No error. Payment instructions screen appears with PayPal/Revolut details and 20-min countdown.
+- [ ] Tap "Done — I've sent payment". No error. Button disappears, shows waiting state.
+- [ ] **Seller bell badge** lights up immediately (red dot on Alerts tab).
+- [ ] As seller: tap Alerts tab. Notification appears: "Payment is on its way".
+- [ ] Seller: go to My Sales → tap the order. Tap Confirm payment received. No error.
+- [ ] **Buyer bell badge** lights up immediately (red dot on Alerts tab).
+- [ ] As buyer: tap Alerts tab. Notification appears: "Your order is confirmed".
+- [ ] Seller: enter a tracking number (keyboard does not cover the field). Tap Mark as dispatched. No error.
+- [ ] **Buyer bell badge** lights up again.
+- [ ] As buyer: order shows Dispatched with tracking number. Royal Mail link tappable.
+- [ ] Buyer: tap Confirm received. Confirmation alert appears. Confirm. No error.
+- [ ] **Seller bell badge** lights up.
 - [ ] Order status becomes Delivered. Both buyer and seller can see it.
 - [ ] After 48 hours (or ask Claude to manually complete it): order shows Completed.
 - [ ] **DB check:** Ask Claude — "did the trust score events write for the completed transaction?"
