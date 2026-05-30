@@ -166,7 +166,7 @@ export default function Profile() {
   const tabNav = useNavigation('/(app)');
   useEffect(() => {
     const unsub = (tabNav as any).addListener('blur', () => {
-      (stackNav as any).popToTop?.();
+      (stackNav as any).navigate?.('index');
     });
     return unsub;
   }, [tabNav, stackNav]);
