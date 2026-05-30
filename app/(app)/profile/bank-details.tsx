@@ -155,6 +155,11 @@ export default function PaymentDetails() {
             />
           </View>
 
+          {/* WhatsApp nudge */}
+          <Text style={[s.contactHint, { color: theme.textSecondary, fontFamily: 'Inter_400Regular' }]}>
+            Tip: add your WhatsApp number in the seller's note on your listings so buyers can reach you quickly.
+          </Text>
+
           {error && (
             <Text style={[s.errorText, { color: theme.error, fontFamily: 'Inter_400Regular' }]}>
               {error}
@@ -248,6 +253,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     revAt:    { fontSize: 15, marginRight: 2 },
     revField: { flex: 1, fontSize: 15, padding: 0 },
 
+    contactHint: { fontSize: 13, lineHeight: 19, marginBottom: 16 },
     errorText: { fontSize: 13, marginBottom: 12 },
     savedText: { fontSize: 13, marginBottom: 12 },
 
