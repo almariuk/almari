@@ -149,6 +149,13 @@ When a new feature or change is requested, reason about the full system impact f
 - Merge all work to main at end of every session — never leave built code on a feature branch
 - At the start of every session read CLAUDE.md, ALMARI_PRD.md and ALMARI_BACKLOG.md before doing anything else
 
+**Before every release (non-negotiable):**
+1. Run `npx tsc --noEmit` — must be clean
+2. Run `scripts/pre-release-checks.sql` against the DB — all 12 checks must return 0 failures
+3. Any new table that the app writes to must be audited for INSERT/UPDATE/DELETE RLS policies before shipping — missing policies fail silently and corrupt data
+4. Any change to trust score components (adding/removing/reweighting) must update `maxScore` everywhere it is hardcoded: `ListingCard.tsx` (`maxScore={60}`), `app/listing/[id].tsx` (`maxScore={60}`), and the fallback in `hooks/useTrustTiers.ts`
+5. User runs `docs/test-checklist.md` on device — pay particular attention to: score on review screen matches DB after save, and firework on card/detail matches review screen
+
 ---
 
 ## Tech stack
