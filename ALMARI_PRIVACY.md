@@ -78,6 +78,7 @@ We use a small number of trusted services to run Almari:
 | Service | What they receive | Why |
 |---|---|---|
 | **Supabase** | All platform data (stored in their EU infrastructure) | Database and authentication |
+| **Resend** | Your email address and transaction details | Sending transactional emails (order confirmed, dispatched, delivered) |
 | **Expo / Apple / Google** | Push notification tokens | Sending you app notifications |
 
 Each of these services processes data only as instructed by us, under their own data processing agreements. We do not sell data to any of them or allow them to use it for their own purposes.
