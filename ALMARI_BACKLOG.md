@@ -46,7 +46,7 @@ Wire up on transaction `completed`: seller +5, buyer +3. On concern upheld (manu
 ### Seller contact method nudge
 Payment instructions screen says "Contact {sellerName} directly" when no payment instructions set. Sellers should be nudged on the bank-details screen to include a WhatsApp number or contact method alongside their payment details. Update placeholder/hint text in `app/(app)/profile/bank-details.tsx`. Resend transactional emails (Phase 3) is the proper long-term solution.
 
-### Postage — simplify to hints only (8 files, no DB migration)
+### Postage — simplify to hints only — DONE
 
 **Decision:** Postage is not a separate charge. Sellers factor it into their asking price. Listing flow shows a read-only hint box with real Royal Mail prices. Buyer sees one price only.
 

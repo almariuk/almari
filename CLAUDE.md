@@ -58,7 +58,7 @@ Phase 1 — Get to TestFlight. All code is done. Blockers are founder actions: A
 - [ ] S4: Sendcloud — Royal Mail label generation, called from S24 dispatch screen
 - [ ] S5: Exchange rate API — daily GBP/INR fetch for price context panel on S6
 - [ ] S6: Price context panel on S6 — original INR price, replacement cost, benchmark comparisons
-- [ ] T7: Resend transactional emails — order confirmation, dispatch, delivery, concern resolved. (Concern raised email already done via pg_net DB trigger.)
+- [x] T7: Resend transactional emails — payment sent, payment confirmed, dispatched, delivered. All 4 implemented as pg_net DB triggers (same pattern as concern email). `_notif_user_email()` helper fetches recipient from `auth.users`.
 
 ### Phase 4 — Social sign-in
 - [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
@@ -69,7 +69,7 @@ Phase 1 — Get to TestFlight. All code is done. Blockers are founder actions: A
 - [x] L1: Why selling phrase — done. `why_selling_copy_id` saved to `listings`, tap-to-select cards in Step 1.
 - [ ] L2: S18 Removal reason screen — post-launch (see backlog)
 - [ ] L3: Removal score logic — post-launch (see backlog)
-- [x] L4: Private seller motivation — confirmed built. `seller_motivation_type_id` saved to `listings`, full record written to `private_seller_motivation` table on submit.
+- [x] L4: Private seller motivation — **REMOVED from listing flow (2026-05-30).** `private_seller_motivation` table stays in DB for future analytics use. Max trust score reduced from 62 → 60.
 - [ ] L5: Draft listing persistence — post-launch (see backlog)
 - [x] L6: Sort options on S5 search — done. Sort bar: Newest / Price ↑ / Price ↓. `SortBy` type + `sortBy` filter in `useFeedListings`.
 
@@ -86,7 +86,7 @@ Phase 1 — Get to TestFlight. All code is done. Blockers are founder actions: A
 
 ### Phase 7 — Profile completeness + polish
 - [x] PR2: Payment details screen — `app/(app)/profile/bank-details.tsx` done. Seller enters PayPal/Revolut/bank details (offline model). Stripe Connect replaces this in Phase 3.
-- [ ] PR3: Notifications screen — `app/(app)/notifications.tsx` currently blank → real (push notification history list)
+- [x] PR3: Notifications screen — fully rebuilt. Chronological list, unread dot, relative time, tap → navigate to buyer/seller order detail (role auto-detected), swipe-to-delete, mark all read, empty state, real-time Supabase subscription. Unread badge on Alerts tab icon. 5 in-app notification triggers + 4 transactional email triggers on `transactions` table. `GestureHandlerRootView` added to root layout.
 - [x] PR4: S27 Seller public profile — done. `app/profile/[id].tsx` built. Seller row on listing detail is tappable. Shows: first name + diya tier colour, member since, completed sales count, active listings grid.
 - [x] PR5: Empty states — design and implement all empty states per PRD table (feed, search, my listings, my purchases, seller profile)
 
@@ -151,7 +151,7 @@ When a new feature or change is requested, reason about the full system impact f
 
 **Before every release (non-negotiable):**
 1. Run `npx tsc --noEmit` — must be clean
-2. Run `scripts/pre-release-checks.sql` against the DB — all 12 checks must return 0 failures
+2. Run `scripts/pre-release-checks.sql` against the DB — all 28 checks must return 0 failures
 3. Any new table that the app writes to must be audited for INSERT/UPDATE/DELETE RLS policies before shipping — missing policies fail silently and corrupt data
 4. Any change to trust score components (adding/removing/reweighting) must update `maxScore` everywhere it is hardcoded: `ListingCard.tsx` (`maxScore={60}`), `app/listing/[id].tsx` (`maxScore={60}`), and the fallback in `hooks/useTrustTiers.ts`
 5. User runs `docs/test-checklist.md` on device — pay particular attention to: score on review screen matches DB after save, and firework on card/detail matches review screen
@@ -199,8 +199,9 @@ When a new feature or change is requested, reason about the full system impact f
 | S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
 | S22 — My Purchases | `app/(app)/profile/purchases.tsx` | Done (Active / Done tabs) |
 | S22 — My Sales | `app/(app)/profile/sales.tsx` | Done (New / In progress / Done tabs) |
-| S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, payment countdown, confirm received, raise concern nav, concern resolved button, re-accessible payment instructions + "Done — I've sent payment" CTA) |
-| S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
+| S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, payment countdown, confirm received, raise concern nav, concern resolved button, re-accessible payment instructions, "Done — I've sent payment" CTA, tracking Royal Mail link) |
+| S17 — Notifications | `app/(app)/notifications.tsx` | Done (real-time list, unread badge, mark all read, swipe-to-delete, tap → buyer/seller order detail) |
+| S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, dispatch, tracking entry + Royal Mail link + inline edit) |
 | Order confirm | `app/transaction/new/confirm.tsx` | Done (item summary + price, "Place order" creates transaction) |
 | Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (PayPal + Revolut details, 20-min countdown, scarcity copy, F&F instruction box) |
 | S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Done (3 reasons, confirm step, sets concern_open, emails reachalmari@gmail.com via Resend pg_net trigger) |
@@ -226,8 +227,11 @@ When a new feature or change is requested, reason about the full system impact f
 - `trg_reserve_listing` trigger — auto-reserves listing on transaction insert, sets `reserved_until`
 - `trg_trust_score_on_completion` trigger — writes `sale_completed`/`purchase_completed` to `trust_events`, updates `trust_score_cached` when transaction reaches `completed`
 - `trg_concern_email` trigger — fires `pg_net` HTTP call to Resend when `concern_raised_at` is stamped; emails reachalmari@gmail.com
+- **5 in-app notification triggers** — `trg_notify_payment_sent/confirmed/dispatched/delivered/concern_raised` — write to `notifications` table on transaction state changes. `_notif_item_name()` helper always returns non-null (LEFT JOIN + scalar COALESCE).
+- **4 transactional email triggers** — `trg_email_payment_sent/confirmed/dispatched/delivered` — fire `pg_net` → Resend. `_notif_user_email()` fetches recipient from `auth.users`.
 - `app_config` table — stores secrets (Resend API key etc.) outside of git
 - React Query `focusManager` wired to `AppState` — cache invalidates correctly on app foreground
+- `GestureHandlerRootView` wraps root layout — required for Swipeable (swipe-to-delete in notifications)
 
 ---
 
