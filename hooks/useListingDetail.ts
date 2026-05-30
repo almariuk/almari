@@ -30,13 +30,14 @@ export function useListingDetail(id: string) {
             id, first_name, last_name_initial,
             user_profile ( trust_score_cached, payment_instructions )
           ),
-          listing_measurements ( bust_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
+          listing_measurements ( bust_cm, chest_cm, waist_cm, hips_cm, height_cm, uk_shoe_size, label_size, age_from_years, age_to_years, height_from_cm, height_to_cm ),
           listing_trust_scores ( total_score ),
           provenance (
             purchase_year, original_price_inr, original_price_approximate,
             is_heirloom, heirloom_story,
             provenance_cities ( name, country ),
-            provenance_areas ( name )
+            provenance_areas ( name ),
+            seller_types ( name )
           )
         `)
         .eq('id', id)
@@ -93,6 +94,7 @@ export function useListingDetail(id: string) {
         measurements: mRow
           ? {
               bustCm: mRow.bust_cm ?? null,
+              chestCm: mRow.chest_cm ?? null,
               waistCm: mRow.waist_cm ?? null,
               hipsCm: mRow.hips_cm ?? null,
               heightCm: mRow.height_cm ?? null,
@@ -109,6 +111,7 @@ export function useListingDetail(id: string) {
               cityName: pRow.provenance_cities?.name ?? null,
               areaName: pRow.provenance_areas?.name ?? null,
               country: pRow.provenance_cities?.country ?? null,
+              sellerTypeName: pRow.seller_types?.name ?? null,
               purchaseYear: pRow.purchase_year ?? null,
               originalPriceInr: pRow.original_price_inr ?? null,
               isApproximate: pRow.original_price_approximate ?? false,

@@ -2,6 +2,7 @@ import type { ListingStatus } from './database'
 
 export interface ListingDetailMeasurements {
   bustCm: number | null
+  chestCm: number | null
   waistCm: number | null
   hipsCm: number | null
   heightCm: number | null
@@ -17,6 +18,7 @@ export interface ListingDetailProvenance {
   cityName: string | null
   areaName: string | null
   country: string | null
+  sellerTypeName: string | null
   purchaseYear: number | null
   originalPriceInr: number | null
   isApproximate: boolean

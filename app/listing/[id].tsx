@@ -273,7 +273,11 @@ export default function ListingDetail() {
                 <DetailRow label="Fabric" value={listing.fabricDisplayName} />
               )}
               {listing.careDisplayText && (
-                <DetailRow label="Care" value={listing.careDisplayText} />
+                <DetailRow label="Care" value={
+                  listing.careDetailText
+                    ? `${listing.careDisplayText} — ${listing.careDetailText}`
+                    : listing.careDisplayText
+                } />
               )}
             </>
           )}
@@ -299,6 +303,9 @@ export default function ListingDetail() {
                 <>
                   {listing.measurements.bustCm !== null && (
                     <DetailRow label="Bust" value={formatMeasurement(listing.measurements.bustCm)} />
+                  )}
+                  {listing.measurements.chestCm !== null && (
+                    <DetailRow label="Chest" value={formatMeasurement(listing.measurements.chestCm)} />
                   )}
                   {listing.measurements.waistCm !== null && (
                     <DetailRow label="Waist" value={formatMeasurement(listing.measurements.waistCm)} />
@@ -328,6 +335,9 @@ export default function ListingDetail() {
               <SectionLabel text="Provenance" />
               {provLocation && (
                 <DetailRow label="From" value={provLocation} />
+              )}
+              {prov.sellerTypeName && (
+                <DetailRow label="Bought from" value={prov.sellerTypeName} />
               )}
               {prov.purchaseYear && (
                 <DetailRow label="Purchased" value={String(prov.purchaseYear)} />
