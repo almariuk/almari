@@ -239,7 +239,7 @@ export default function ListReview() {
      draft.sellerTypeId, draft.purchaseYear, draft.originalPriceInr, draft.careStatusId,
      draft.listingBustCm, draft.listingWaistCm, draft.listingHipsCm, draft.listingChestCm,
      draft.listingHeightCm, draft.listingUkShoeSize, draft.listingLabelSize,
-     draft.whatIsIncluded, draft.isSetComplete, draft.motivationTypeId, draft.additionalNotes],
+     draft.whatIsIncluded, draft.isSetComplete, draft.additionalNotes],
   );
 
   const totalScore = components.reduce((acc: number, c: TrustComponent) => acc + c.earned, 0);
@@ -293,7 +293,6 @@ export default function ListReview() {
             fabric_type_id: draft.fabricTypeId,
             care_status_id: draft.careStatusId,
             why_selling_copy_id: draft.whySellingCopyId,
-            seller_motivation_type_id: draft.motivationTypeId,
             set_contents: draft.whatIsIncluded.trim() || null,
             set_complete: draft.isSetComplete,
             additional_notes: draft.additionalNotes.trim() || null,
@@ -352,19 +351,7 @@ export default function ListReview() {
           await (supabase as any).from('listing_measurements').delete().eq('listing_id', listingId);
         }
 
-        // 6a. Replace private seller motivation
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('private_seller_motivation').delete().eq('listing_id', listingId);
-        if (draft.motivationTypeId !== null) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('private_seller_motivation').insert({
-            listing_id: listingId,
-            user_id: sellerId,
-            motivation_type_id: draft.motivationTypeId,
-          });
-        }
-
-        // 7a. Replace trust score + components
+        // 6a. Replace trust score + components
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('listing_trust_scores').upsert(
           { listing_id: listingId, total_score: totalScore },
@@ -408,7 +395,6 @@ export default function ListReview() {
             fabric_type_id: draft.fabricTypeId,
             care_status_id: draft.careStatusId,
             why_selling_copy_id: draft.whySellingCopyId,
-            seller_motivation_type_id: draft.motivationTypeId,
             set_contents: draft.whatIsIncluded.trim() || null,
             set_complete: draft.isSetComplete,
             additional_notes: draft.additionalNotes.trim() || null,
@@ -466,16 +452,6 @@ export default function ListReview() {
           });
         }
 
-        // 6. Insert private seller motivation
-        if (draft.motivationTypeId !== null) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('private_seller_motivation').insert({
-            listing_id: listingId,
-            user_id: sellerId,
-            motivation_type_id: draft.motivationTypeId,
-          });
-        }
-
         // 7. Insert trust score
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('listing_trust_scores').insert({
@@ -497,6 +473,8 @@ export default function ListReview() {
         );
 
         setListingId(listingId);
+        qc.resetQueries({ queryKey: ['my_listings'] });
+        qc.resetQueries({ queryKey: ['feed_listings'] });
         setSubmitted(true);
       }
     } catch (err) {
@@ -512,7 +490,7 @@ export default function ListReview() {
     return (
       <SafeAreaView style={s.root} edges={['top', 'bottom']}>
         <View style={s.successRoot}>
-          <FireworkTrust score={maxScore} maxScore={maxScore} size={100} />
+          <FireworkTrust score={totalScore} maxScore={maxScore} size={100} />
           <Text style={s.successTitle}>{isEditMode ? 'Listing updated!' : 'Your listing is live!'}</Text>
           <Text style={s.successSubtitle}>
             {isEditMode

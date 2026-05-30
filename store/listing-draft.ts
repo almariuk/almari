@@ -14,7 +14,6 @@ interface ListingDraftData {
   conditionId: number | null;
   careStatusId: number | null;
   whySellingCopyId: number | null;
-  motivationTypeId: number | null;
 
   // Step 2 — Provenance
   isHeirloom: boolean;
@@ -72,7 +71,6 @@ interface ListingDraftActions {
   setConditionId: (id: number | null) => void;
   setCareStatusId: (id: number | null) => void;
   setWhySellingCopyId: (id: number | null) => void;
-  setMotivationTypeId: (id: number | null) => void;
   // Step 2 — Provenance
   setIsHeirloom: (v: boolean) => void;
   setHeirloomStory: (v: string) => void;
@@ -126,7 +124,6 @@ const initialData: ListingDraftData = {
   conditionId: null,
   careStatusId: null,
   whySellingCopyId: null,
-  motivationTypeId: null,
   isHeirloom: false,
   heirloomStory: '',
   provenanceCityId: null,
@@ -170,7 +167,6 @@ export const useListingDraftStore = create<ListingDraftState>((set) => ({
   setConditionId: (id) => set({ conditionId: id }),
   setCareStatusId: (id) => set({ careStatusId: id }),
   setWhySellingCopyId: (id) => set({ whySellingCopyId: id }),
-  setMotivationTypeId: (id) => set({ motivationTypeId: id }),
 
   // Step 2 — Provenance
   // Toggling heirloom clears the opposing set of fields — invariant, not UI logic

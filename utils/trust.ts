@@ -73,7 +73,6 @@ export function computeTrust(
     (draft.whatIsIncluded.trim().length > 0 ? 1 : 0) +
     (draft.isSetComplete !== null ? 2 : 0);
 
-  const motivationEarned = draft.motivationTypeId !== null ? 2 : 0;
   const notesEarned = draft.additionalNotes.trim().length > 0 ? 2 : 0;
 
   return [
@@ -86,7 +85,6 @@ export function computeTrust(
     { label: 'Care', earned: careEarned, max: careMax },
     { label: 'Measurements', earned: measurementsEarned, max: 7 },
     { label: 'Set info', earned: setEarned, max: 3 },
-    { label: 'Why selling', earned: motivationEarned, max: 2 },
     { label: 'Additional notes', earned: notesEarned, max: 2 },
   ];
 }

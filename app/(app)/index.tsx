@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import {
   IconBell,
   IconRulerMeasure,
@@ -41,6 +41,8 @@ export default function Home() {
   } = useFeedListings()
 
   const isRefreshing = isFetching && !isLoading && !isFetchingNextPage
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   const items = useMemo((): FeedItem[] => {
     const all = data?.pages.flat() ?? []

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { IconCandleFilled, IconClock } from '@tabler/icons-react-native'
 import { supabase } from '@/lib/supabase'
@@ -10,7 +10,7 @@ import { useAuthStore } from '@/store/auth'
 import { useListingDraftStore } from '@/store/listing-draft'
 import type { ListingDraftData } from '@/store/listing-draft'
 import { useListingDetail } from '@/hooks/useListingDetail'
-import { useTrustTiers, getDiyaColour, getMaxTrustScore } from '@/hooks/useTrustTiers'
+import { useTrustTiers, getDiyaColour } from '@/hooks/useTrustTiers'
 import { getFitLabel } from '@/utils/fit'
 import { PhotoCarousel } from '@/components/listings/PhotoCarousel'
 import FireworkTrust from '@/components/brand/FireworkTrust'
@@ -94,7 +94,8 @@ export default function ListingDetail() {
   const hydrate = useListingDraftStore((st) => st.hydrate)
   const resetDraft = useListingDraftStore((st) => st.reset)
   const [editLoading, setEditLoading] = useState(false)
-  const { data: listing, isLoading, error } = useListingDetail(id ?? '')
+  const { data: listing, isLoading, error, refetch } = useListingDetail(id ?? '')
+  useFocusEffect(useCallback(() => { refetch() }, []))
   const { data: tiers = [] } = useTrustTiers()
 
   // Expire stale reservation lazily when this screen loads
@@ -135,7 +136,7 @@ export default function ListingDetail() {
   }
 
   const diyaColour = getDiyaColour(listing.sellerTrustScore, tiers)
-  const maxTrustScore = getMaxTrustScore(tiers)
+
 
   // Fit label vs buyer's own measurements
   const userMeasurements =
@@ -245,7 +246,7 @@ export default function ListingDetail() {
             <Text style={[s.sellerName, { color: theme.text, fontFamily: 'Inter_500Medium' }]}>
               {'  '}{listing.sellerName}
             </Text>
-            <FireworkTrust score={listing.listingTrustScore} maxScore={maxTrustScore} size={84} />
+            <FireworkTrust score={listing.listingTrustScore} maxScore={60} size={84} />
           </TouchableOpacity>
 
           {/* Why selling */}
@@ -402,15 +403,14 @@ export default function ListingDetail() {
                   .select(`
                     id, category_id, subcategory_id, work_type_id, pattern_id, fabric_type_id,
                     occasion_bucket_id, colour_id, condition_id, care_status_id,
-                    why_selling_copy_id, seller_motivation_type_id,
+                    why_selling_copy_id,
                     set_contents, set_complete, additional_notes, asking_price_pence,
                     listing_photos ( url, display_order ),
                     provenance ( city_id, area_id, seller_type_id, purchase_year,
                                  original_price_inr, original_price_approximate, is_heirloom, heirloom_story ),
                     listing_measurements ( bust_cm, waist_cm, hips_cm, chest_cm, height_cm,
                                           uk_shoe_size, label_size, age_from_years, age_to_years,
-                                          height_from_cm, height_to_cm ),
-                    private_seller_motivation ( motivation_type_id )
+                                          height_from_cm, height_to_cm )
                   `)
                   .eq('id', listing.id)
                   .single()
@@ -419,7 +419,6 @@ export default function ListingDetail() {
                 photos.sort((a: any, b: any) => a.display_order - b.display_order)
                 const prov = Array.isArray(data.provenance) ? data.provenance[0] : data.provenance
                 const meas = Array.isArray(data.listing_measurements) ? data.listing_measurements[0] : data.listing_measurements
-                const motiv = Array.isArray(data.private_seller_motivation) ? data.private_seller_motivation[0] : data.private_seller_motivation
                 const str = (v: number | null | undefined) => v != null ? String(v) : ''
                 const draftData: ListingDraftData = {
                   listingId: data.id,
@@ -434,7 +433,6 @@ export default function ListingDetail() {
                   conditionId: data.condition_id,
                   careStatusId: data.care_status_id ?? null,
                   whySellingCopyId: data.why_selling_copy_id ?? null,
-                  motivationTypeId: motiv?.motivation_type_id ?? null,
                   isHeirloom: prov?.is_heirloom ?? false,
                   heirloomStory: prov?.heirloom_story ?? '',
                   provenanceCityId: prov?.city_id ?? null,

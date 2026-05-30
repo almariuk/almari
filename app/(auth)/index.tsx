@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Brand } from '@/constants/brand';
-import AlmariLogo from '@/components/brand/AlmariLogo';
+import AlmariIcon from '@/components/brand/AlmariIcon';
 import type { MicroCopy } from '@/types/database';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -118,7 +118,7 @@ export default function Splash() {
 
           {/* ── Hero ─────────────────────────────────────────── */}
           <View style={s.hero}>
-            <AlmariLogo size={100} variant="light" />
+            <AlmariIcon size={100} />
             <Text style={s.wordmark}>{Brand.name.toUpperCase()}</Text>
             <Text style={s.logoTagline}>{Brand.logoTagline}</Text>
             <Text style={s.scriptTagline}>{Brand.scriptTagline}</Text>

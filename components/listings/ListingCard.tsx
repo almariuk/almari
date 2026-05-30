@@ -129,7 +129,7 @@ function ListingCard({ data, cardWidth, onPress }: Props) {
           >
             {'  '}{data.sellerName}
           </Text>
-          <FireworkTrust score={data.listingTrustScore} maxScore={62} size={36} />
+          <FireworkTrust score={data.listingTrustScore} maxScore={60} size={36} />
         </View>
       </View>
       </Animated.View>

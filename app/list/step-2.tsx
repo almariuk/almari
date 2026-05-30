@@ -40,7 +40,7 @@ export default function ListStep2() {
     queryKey: ['provenance_cities'],
     queryFn: async () => {
       const { data } = await supabase.from('provenance_cities').select('*').order('name');
-      return (data ?? []) as ProvenanceCityRow[];
+      return (data ?? []).filter((c) => c.name.toLowerCase() !== 'other') as ProvenanceCityRow[];
     },
     staleTime: 60 * 60 * 1000,
   });

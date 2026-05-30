@@ -62,15 +62,14 @@ async function fetchListingForEdit(listingId: string): Promise<ListingDraftData>
     .select(`
       id, category_id, subcategory_id, work_type_id, pattern_id, fabric_type_id,
       occasion_bucket_id, colour_id, condition_id, care_status_id,
-      why_selling_copy_id, seller_motivation_type_id,
+      why_selling_copy_id,
       set_contents, set_complete, additional_notes, asking_price_pence,
       listing_photos ( url, display_order ),
       provenance ( city_id, area_id, seller_type_id, purchase_year,
                    original_price_inr, original_price_approximate, is_heirloom, heirloom_story ),
       listing_measurements ( bust_cm, waist_cm, hips_cm, chest_cm, height_cm,
                               uk_shoe_size, label_size, age_from_years, age_to_years,
-                              height_from_cm, height_to_cm ),
-      private_seller_motivation ( motivation_type_id )
+                              height_from_cm, height_to_cm )
     `)
     .eq('id', listingId)
     .single()
@@ -82,8 +81,6 @@ async function fetchListingForEdit(listingId: string): Promise<ListingDraftData>
 
   const prov = Array.isArray(data.provenance) ? data.provenance[0] : data.provenance
   const meas = Array.isArray(data.listing_measurements) ? data.listing_measurements[0] : data.listing_measurements
-  const motiv = Array.isArray(data.private_seller_motivation) ? data.private_seller_motivation[0] : data.private_seller_motivation
-
   const str = (v: number | null | undefined) => v != null ? String(v) : ''
 
   return {
@@ -99,7 +96,6 @@ async function fetchListingForEdit(listingId: string): Promise<ListingDraftData>
     conditionId: data.condition_id,
     careStatusId: data.care_status_id ?? null,
     whySellingCopyId: data.why_selling_copy_id ?? null,
-    motivationTypeId: motiv?.motivation_type_id ?? null,
     isHeirloom: prov?.is_heirloom ?? false,
     heirloomStory: prov?.heirloom_story ?? '',
     provenanceCityId: prov?.city_id ?? null,

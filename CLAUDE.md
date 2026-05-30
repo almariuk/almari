@@ -14,9 +14,9 @@ When Stripe + Sendcloud are added (Phase 3), restore the full postage selection 
 
 ---
 
-## Tonight's task list
+## Current focus
 
-All done. Focus is now Phase 1 — Get to TestFlight.
+Phase 1 — Get to TestFlight. All code is done. Blockers are founder actions: Apple Developer account and Google Play Developer account.
 
 ---
 
@@ -46,9 +46,10 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [x] Step 4: S22 My Purchases (`app/(app)/profile/purchases.tsx`) + My Sales (`app/(app)/profile/sales.tsx`) — list screens with status tabs, accessible from Profile → Orders
 - [x] Step 5: S23 Order detail, buyer view (`app/transaction/[id]/buyer.tsx`) — status timeline, payment reminder, tracking, confirm received (opens 48h concern window), raise a concern nav
 - [x] Step 6: S24 Order detail, seller view (`app/transaction/[id]/seller.tsx`) — confirm payment received, tracking entry + mark dispatched, dispatched/delivered/completed states
-- [x] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`. Email notification (atulblal@gmail.com) is Phase 3 T7.
+- [x] Step 7: S25 Raise a concern (`app/transaction/[id]/concern.tsx`) — 3 reasons, confirmation step, sets status → `concern_open`. Email to reachalmari@gmail.com via Resend (pg_net DB trigger) — done.
 - [x] Step 8: S26 Lost in post (`app/transaction/[id]/lost-in-post.tsx`) — both parties confirm, status → `refunded`, manual Almari refund
 - [x] Step 9: Trust score events on completion — DB trigger writes `sale_completed` (+3) for seller and `purchase_completed` (+2) for buyer on every `completed` transition, updates `trust_score_cached`. Concern upheld (−10) is manual admin action.
+- [x] Step 10: GDPR delete account — app-side blocks deletion if active listings or open orders; anonymises `user_identity` + `user_profile`, signs out. `auth.users` row deletion is a manual founder task.
 
 ### Phase 3 — Stripe + Sendcloud (post-launch, when transaction volume justifies it)
 - [ ] S1: Replace payment instructions screen with Stripe payment sheet on S12
@@ -57,7 +58,7 @@ All done. Focus is now Phase 1 — Get to TestFlight.
 - [ ] S4: Sendcloud — Royal Mail label generation, called from S24 dispatch screen
 - [ ] S5: Exchange rate API — daily GBP/INR fetch for price context panel on S6
 - [ ] S6: Price context panel on S6 — original INR price, replacement cost, benchmark comparisons
-- [ ] T7: Resend transactional emails — order confirmation, dispatch, delivery, concern raised/resolved
+- [ ] T7: Resend transactional emails — order confirmation, dispatch, delivery, concern resolved. (Concern raised email already done via pg_net DB trigger.)
 
 ### Phase 4 — Social sign-in
 - [ ] A1: Apple Sign-In — `expo-apple-authentication` + Supabase Apple provider. Capture name on first sign-in only (Apple only sends it once).
@@ -121,7 +122,7 @@ CREATE TABLE user_measurement_profiles (
 
 **Fees:** Zero at launch — no transaction fee, no buyer protection fee. Attracts both sides of the marketplace. Introduce fees once liquidity is established. Promoted listings / subscriptions to be processed via web (Stripe) not in-app, to avoid Apple's 30% cut.
 
-**Image optimisation:** Supabase CDN render endpoint — `/render/image/public/` with `?width=X&quality=Y`. Feed cards: 400px/75. Detail carousel: 800px/85.
+**Image optimisation:** Upload-time resize via `expo-image-manipulator` in `app/list/review.tsx` — resized to 1200px wide at 0.88 JPEG quality before upload. Raw Supabase Storage URLs used everywhere. CDN transform endpoint not used.
 
 ---
 
@@ -191,13 +192,15 @@ When a new feature or change is requested, reason about the full system impact f
 | S21 — Measurements | `app/(app)/profile/measurements.tsx` | Done |
 | S22 — My Purchases | `app/(app)/profile/purchases.tsx` | Done (Active / Done tabs) |
 | S22 — My Sales | `app/(app)/profile/sales.tsx` | Done (New / In progress / Done tabs) |
-| S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, confirm received, raise concern nav) |
+| S23 — Order detail, buyer | `app/transaction/[id]/buyer.tsx` | Done (timeline, payment countdown, confirm received, raise concern nav, concern resolved button, re-accessible payment instructions + "Done — I've sent payment" CTA) |
 | S24 — Order detail, seller | `app/transaction/[id]/seller.tsx` | Done (confirm payment, tracking entry, dispatch) |
 | Order confirm | `app/transaction/new/confirm.tsx` | Done (item summary + price, "Place order" creates transaction) |
 | Payment instructions | `app/transaction/new/payment-instructions.tsx` | Done (PayPal + Revolut details, 20-min countdown, scarcity copy, F&F instruction box) |
-| S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Done (3 reasons, confirm step, sets concern_open) |
+| S25 — Raise a concern | `app/transaction/[id]/concern.tsx` | Done (3 reasons, confirm step, sets concern_open, emails reachalmari@gmail.com via Resend pg_net trigger) |
 | S26 — Lost in post | `app/transaction/[id]/lost-in-post.tsx` | Done (both-party confirm, sets refunded) |
 | S27 — Seller public profile | `app/profile/[id].tsx` | Done (diya, member since, listings grid) |
+| Edit listing | `app/list/edit/[id].tsx` | Done (reuses full 4-step listing flow, photo add/remove/reorder) |
+| GDPR — Delete account | `app/(app)/profile/index.tsx` | Done (blocks deletion if active listings or open orders; anonymises user_identity + user_profile; signs out. auth.users deletion is a manual founder task.) |
 
 ### Key components
 - `components/listings/ListingCard.tsx` — feed card with press animation (Reanimated v4)
@@ -211,16 +214,19 @@ When a new feature or change is requested, reason about the full system impact f
 - `utils/trust.ts` — `computeTrust`, `getStateLabel` (shared between pricing and review)
 - `utils/fit.ts` — `getFitLabel` (compares buyer measurements to listing)
 
+### Key DB infrastructure
+- `pg_cron` job — runs every minute, expires stale reservations (`expire_stale_reservations` function)
+- `trg_reserve_listing` trigger — auto-reserves listing on transaction insert, sets `reserved_until`
+- `trg_trust_score_on_completion` trigger — writes `sale_completed`/`purchase_completed` to `trust_events`, updates `trust_score_cached` when transaction reaches `completed`
+- `trg_concern_email` trigger — fires `pg_net` HTTP call to Resend when `concern_raised_at` is stamped; emails reachalmari@gmail.com
+- `app_config` table — stores secrets (Resend API key etc.) outside of git
+- React Query `focusManager` wired to `AppState` — cache invalidates correctly on app foreground
+
 ---
 
 ## Known bugs / DB tasks outstanding
 
-### Outstanding pre-launch items
-- **S25 Raise a concern** — `app/transaction/[id]/concern.tsx` is a stub. 3 permitted grounds, confirmation step, sets status → `concern_open`, emails atulblal@gmail.com.
-- **S26 Lost in post** — `app/transaction/[id]/lost-in-post.tsx` is a stub. Both parties confirm, status → `refunded`.
-- **Step 9: Trust events** — sale completed (+5), purchase completed (+3), concern upheld (−10). No trust_events rows written yet.
-- **Buy Now guard** — disable Buy Now if seller has no payment details set (`payment_instructions IS NULL`).
-- **GDPR delete account** — done. App-side checks block deletion if active listings or open orders exist. Anonymises `user_identity` + `user_profile`, then signs out. `auth.users` row deletion is a manual founder task.
+No outstanding pre-launch items. All Phase 1 and Phase 2 features are built and tested.
 
 ---
 

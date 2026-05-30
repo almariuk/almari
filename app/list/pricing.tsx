@@ -170,7 +170,6 @@ export default function ListPricing() {
       draft.listingLabelSize,
       draft.whatIsIncluded,
       draft.isSetComplete,
-      draft.motivationTypeId,
       draft.additionalNotes,
       conditionQuery.data,
       careQuery.data,
