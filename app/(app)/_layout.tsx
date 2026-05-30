@@ -29,7 +29,7 @@ function useUnreadCount(userId: string): number {
     fetch();
 
     const channel = supabase
-      .channel('notif_badge')
+      .channel(`notif_badge_${userId}_${Date.now()}`)
       .on(
         'postgres_changes' as any,
         { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },

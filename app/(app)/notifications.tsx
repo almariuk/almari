@@ -117,7 +117,7 @@ export default function Notifications() {
   useEffect(() => {
     if (!userId) return
     const channel = supabase
-      .channel('notifications_realtime')
+      .channel(`notifications_realtime_${userId}_${Date.now()}`)
       .on(
         'postgres_changes' as any,
         { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
