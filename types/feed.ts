@@ -51,7 +51,6 @@ export interface FeedFilters {
   patternIds?: number[]
   workTypeIds?: number[]
   fabricTypeIds?: number[]
-  labelSizes?: string[]
   minPricePence?: number
   maxPricePence?: number
   sortBy?: SortBy

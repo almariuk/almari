@@ -56,7 +56,7 @@ export function useFeedListings(filters: FeedFilters = {}) {
       if (filters.fabricTypeIds?.length) query = query.in('fabric_type_id', filters.fabricTypeIds)
       if (filters.minPricePence != null) query = query.gte('asking_price_pence', filters.minPricePence)
       if (filters.maxPricePence != null) query = query.lte('asking_price_pence', filters.maxPricePence)
-      if (filters.labelSizes?.length) query = query.in('listing_measurements.label_size', filters.labelSizes)
+      // labelSizes is applied client-side — PostgREST does not support .in() on embedded table columns
 
       const { data, error } = await query
       if (error) throw error

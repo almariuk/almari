@@ -280,7 +280,6 @@ export default function Search() {
     patternIds:        patternIds.length           > 0 ? patternIds          : undefined,
     workTypeIds:       workTypeIds.length          > 0 ? workTypeIds         : undefined,
     fabricTypeIds:     mergedFabricTypeIds.length  > 0 ? mergedFabricTypeIds : undefined,
-    labelSizes:        labelSizes.length           > 0 ? labelSizes          : undefined,
     minPricePence,
     maxPricePence,
     sortBy,
@@ -296,13 +295,17 @@ export default function Search() {
     : null
 
   const items = useMemo((): FeedItem[] => {
-    const all = data?.pages.flat() ?? []
+    let all = data?.pages.flat() ?? []
+    // Size is filtered client-side — PostgREST cannot .in() on embedded table columns
+    if (labelSizes.length > 0) {
+      all = all.filter(l => l.measurements?.labelSize && labelSizes.includes(l.measurements.labelSize))
+    }
     const withLabels: FeedItem[] = all.map(l => ({
       ...l,
       fitLabel: fitsMeActive && userMeasurements ? getFitLabel(userMeasurements, l.measurements) : null,
     }))
     return fitsMeActive && userMeasurements ? applyFitsMe(withLabels) : withLabels
-  }, [data, fitsMeActive, userMeasurements])
+  }, [data, fitsMeActive, userMeasurements, labelSizes])
 
   const clearText = useCallback(() => { setTextQuery(''); setDebouncedText('') }, [])
 
