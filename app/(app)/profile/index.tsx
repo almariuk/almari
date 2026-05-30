@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -160,6 +160,16 @@ export default function Profile() {
   const router = useRouter();
   const qc = useQueryClient();
   const s = makeStyles(theme);
+
+  // Reset profile stack to root whenever the user switches away from the Profile tab
+  const stackNav = useNavigation();
+  const tabNav = useNavigation('/(app)');
+  useEffect(() => {
+    const unsub = (tabNav as any).addListener('blur', () => {
+      (stackNav as any).popToTop?.();
+    });
+    return unsub;
+  }, [tabNav, stackNav]);
 
   const { session, identity, profile: cachedProfile, setIdentity } = useAuthStore();
   const userId = session?.user.id ?? '';        // auth UID — used for auth operations only

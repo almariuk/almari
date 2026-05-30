@@ -114,7 +114,6 @@ export default function AppLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => <IconUser size={size} color={color} />,
-          ...({ unmountOnBlur: true } as any),
         }}
       />
     </Tabs>
